@@ -46,6 +46,8 @@ class Minimax
     [best_move, best_score]
   end
 
+  # For testing
+  # Show all states with calculated scores
   def show_scores
     puts "Showing scores: "
     @state_scores.each_pair do |state, score|
@@ -79,9 +81,6 @@ class Minimax
       best_score = 0  # draw
     else
       # Otherwise find and score best move for opponent
-      p @depth
-      p position
-      return nil if @depth > 20
       @depth += 1
       best_score = best_move_with_score(state)[1]
       @depth -= 1

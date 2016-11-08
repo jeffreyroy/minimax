@@ -129,7 +129,7 @@ class Game
     # Pick best move using minimax algorithm
     move = @minimax.best_move(state)
     # Make the move
-    puts "I move #{move}"
+    puts "I move #{self.class::BOARD_REV_TRANS[move]}"
     @current_position = next_position(current_state, move)
     @num_moves += 1
     @current_player = :human
