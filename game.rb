@@ -1,4 +1,10 @@
-# Classes
+# Game class
+# Creates framework for two-player game using minimax ai
+# position = data structure containing a position
+# player = a player, usually :human or :computer
+# state = hash containing current position and player to move, i.e.
+# { :position => <current position>, :player => <current player> }
+# move = data structure containing a move
 class Game
   attr_reader :current_state
   attr_accessor :minimax
@@ -27,22 +33,35 @@ class Game
     :human
   end
 
-  # Make a move
+  # Make a move and update the state
   def make_move(move)
     @current_state = next_state(@current_state, move)
   end
 
-   # Check whether game is over
+  # Choose move for computer
+  # using minimax
+  def computer_move
+    return nil if done?(@current_state)
+    # Pick best move using minimax algorithm
+    move = @minimax.best_move(@current_state)
+    # Make the move
+    display_computer_move(move)
+    make_move(move)
+  end
+
+  # Check whether game is over
   def done?(state)
     # Fill this in
   end
 
-  # Check whether game has been won the player currently on the move
+  # Check whether game has been won by the player currently on the move
   # in the specified state
   def won?(state)
     # Fill this in
   end
 
+  # Check whether game has been lost by the player currently on the move
+  # in the specified state
   def lost?(state)
     # Fill this in
   end
@@ -65,22 +84,13 @@ class Game
     # Fill this in
   end
 
-  # Get the player's move
+  # Get the player's move and make it
+  # Should include make_move(move)
   def get_move
     # Fill this in
   end
 
-  # Choose move for computer
-  # using minimax
-  def computer_move
-    return nil if done?(@current_state)
-    # Pick best move using minimax algorithm
-    move = @minimax.best_move(@current_state)
-    # Make the move
-    display_computer_move(move)
-    make_move(move)
-  end
-
+  # Display the computer's move to the player
   def display_computer_move(move)
     # Fill this in
   end

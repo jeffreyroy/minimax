@@ -4,6 +4,8 @@ require_relative 'game'
 # Classes
 class Tictactoe < Game
 
+  ## Constants and initialization
+
   BOARD_TRANS = [0, 6, 1, 8, 7, 5, 3, 2, 9, 4]
   BOARD_REV_TRANS = [0, 2, 7, 6, 9, 5, 1, 4, 3, 8]
   MARKERS = ["   ", " O ", " X "]
@@ -20,26 +22,30 @@ class Tictactoe < Game
     (player == :human) ? 2 : 1
   end
 
-  # Get marker on square on the board (1-9)
-  def marker(num)
-    square_code = current_position[self.class::BOARD_TRANS[num]]
-    self.class::MARKERS[square_code]
+  ## Methods to make moves
+
+  # Legal moves for minimax algorithm
+  def legal_moves(state)
+    position = state[:position]
+    move_list = []
+    position.each_with_index do |square, index|
+      if square == 0
+        move_list << index
+      end
+    end
+    move_list
   end
 
-  def print_line(line)
-    start = line * 3 - 2
-    markers = [0, 1, 2].map { |i| marker(start + i) }
-    puts markers.join("|")
-  end
-
-  # Print the entire board (only works for current position)
-  def display_position
-    print_line(1)
-    puts "---+---+---"
-    print_line(2)
-    puts "---+---+---"
-    print_line(3)
-    puts
+  # Given position and move, return resulting position
+  # Move expressed as number of square 1-9
+  def next_state(state, move)
+    position = state[:position]
+    player = state[:player]
+    result = Array.new(position)
+    # array_square = self.class::BOARD_TRANS[move]
+    result[move] = number(player)
+    next_player = opponent(player)
+    { :position => result, :player => next_player }
   end
 
   # Get the player's move
@@ -60,6 +66,8 @@ class Tictactoe < Game
     end
     make_move(array_square)
   end
+
+  ## Methods to determine outcome
 
   # Check whether game is over
   # (ie whether the board is full)
@@ -118,32 +126,32 @@ class Tictactoe < Game
     won?( { :position => position, :player => player } )
   end
 
+  ## Displays
+
+  # Get marker on square on the board (1-9)
+  def marker(num)
+    square_code = current_position[self.class::BOARD_TRANS[num]]
+    self.class::MARKERS[square_code]
+  end
+
+  def print_line(line)
+    start = line * 3 - 2
+    markers = [0, 1, 2].map { |i| marker(start + i) }
+    puts markers.join("|")
+  end
+
+  # Print the entire board (only works for current position)
+  def display_position
+    print_line(1)
+    puts "---+---+---"
+    print_line(2)
+    puts "---+---+---"
+    print_line(3)
+    puts
+  end
+
   def display_computer_move(move)
     puts "I move #{self.class::BOARD_REV_TRANS[move]}"
-  end
-
-  # Legal moves for minimax algorithm
-  def legal_moves(state)
-    position = state[:position]
-    move_list = []
-    position.each_with_index do |square, index|
-      if square == 0
-        move_list << index
-      end
-    end
-    move_list
-  end
-
-  # Given position and move, return resulting position
-  # Move expressed as number of square 1-9
-  def next_state(state, move)
-    position = state[:position]
-    player = state[:player]
-    result = Array.new(position)
-    # array_square = self.class::BOARD_TRANS[move]
-    result[move] = number(player)
-    next_player = opponent(player)
-    { :position => result, :player => next_player }
   end
 
 end
