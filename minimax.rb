@@ -79,7 +79,9 @@ class Minimax
       best_score = 0  # draw
     else
       # Otherwise find and score best move for opponent
-      # print @depth
+      p @depth
+      p position
+      return nil if @depth > 20
       @depth += 1
       best_score = best_move_with_score(state)[1]
       @depth -= 1
