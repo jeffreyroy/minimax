@@ -16,14 +16,13 @@ class Game
   end
 
   # Display the current position
-  def display_position
+  def display_position(position)
     print "Current position: "
-    @current_position.each do |heap|
+    position.each do |heap|
       print heap
       print " "
     end
     puts
-    puts "Total remaining: #{total_left(current_state)}."
   end
 
   # Get the player's move
@@ -32,7 +31,7 @@ class Game
     heap = 0
     number = 0
     l = @current_position.length
-    display_position
+    display_position(@current_position)
     # Pick a heap
     while heap < 1 || heap > l || @current_position[heap - 1] == 0
       puts
@@ -75,13 +74,6 @@ class Game
   # Choose move for computer
   def computer_move
     return nil if done?(current_state)
-    # # Pick random move
-    # l = @current_position.length
-    # heap = rand(l)
-    # while @current_position[heap] == 0
-    #   heap = rand(l)
-    # end
-    # number = rand(@current_position[heap]) + 1
     state = { :position => @current_position, :player => :computer}
     # Pick best move using minimax algorithm
     move = @minimax.best_move(state)
@@ -139,8 +131,9 @@ while !game.done?(game.current_state)
     puts "You win!!"
   else
     game.computer_move
+    puts "I win!" if game.lost?(game.current_state)
   end
 end
 
-puts "I win!"
+
 

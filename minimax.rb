@@ -4,6 +4,7 @@ class Minimax
     @game = game
     @state_scores = {}
     @depth = 0
+    @testing = true
   end
 
   def best_move(state)
@@ -40,8 +41,21 @@ class Minimax
       end
     end
     # Return best move
-    print best_score
+    # print best_score
+
     [best_move, best_score]
+  end
+
+  def show_scores
+    puts "Showing scores: "
+    @state_scores.each_pair do |state, score|
+      position = state[:position]
+      player = state[:player]
+      puts
+      @game.display_position(position)
+      puts "Player to move: #{player}"
+      puts "Score: #{score}"
+    end
   end
 
   # Returns score of a position for the player to move
@@ -49,24 +63,27 @@ class Minimax
   # maximizing_player = true / false
   def score(state)
     position = state[:position]
-    player = state[:player]
-    next_player = @game.opponent(player)
+    # player = state[:player]
+    # next_player = @game.opponent(player)
     # If state is in master list, return score
     if @state_scores.has_key?(state)
       return @state_scores[state]
     end
     # If @game is over, return appropriate score
+    # @testing = false if @game.done?(state)
     if @game.won?(state)
-      return -10  # player won
+      best_score = 10  # player won
     elsif @game.lost?(state)
-      return 10  # player lost
+      best_score = -10  # player lost
     elsif @game.done?(state)
-      return 0  # draw
+      best_score = 0  # draw
+    else
+      # Otherwise find and score best move for opponent
+      # print @depth
+      @depth += 1
+      best_score = best_move_with_score(state)[1]
+      @depth -= 1
     end
-    # Otherwise find and score best move for opponent
-    @depth += 1
-    best_score = best_move_with_score(state)[1]
-    @depth -= 1
     # Add score to master list and return it
     # (Score is negative of opponent's best score)
     @state_scores[state] = -best_score
