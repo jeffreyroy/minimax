@@ -29,9 +29,8 @@ class Minimax
     best_move = nil
     next_player = @game.opponent(player)
     score_array = legal_moves.map do |move|
-      # Generate resulting position
-      score_position = @game.next_position(state, move)
-      score_state = { :position => score_position, :player => next_player }
+      # Generate resulting state
+      score_state = @game.next_state(state, move)
       # Score resulting position (for opponent)
       move_score = score(score_state)
       # Check whether this move is best so far

@@ -1,26 +1,8 @@
 require_relative 'minimax'
+require_relative 'game'
 
 # Classes
-class Game
-  attr_accessor :current_position, :current_player, :minimax
-
-  # Initialize new game of chomp
-  # position is a two-dimensional array consisting of ones
-  def initialize(position)
-    @current_position = position
-    @current_player = :human
-  end
-
-  # State is a hash consisting of the current position and the
-  # Player currently to move
-  def current_state
-    { :position => @current_position, :player => @current_player }
-  end
-
-  def opponent(player)
-    return :computer if player == :human
-    :human
-  end
+class Chomp < Game
 
    # Check whether game is over
   def done?(state)
@@ -56,18 +38,21 @@ class Game
 
   # Given position and move, return resulting position
   # Move expressed as coordinates of cell to be chomped
-  def next_position(state, move)
+  def next_state(state, move)
     position = state[:position]
+    player = state[:player]
     result = position.each_with_index.map do |row, x|
       row.each_with_index.map do |value, y|
         ( x >= move[0] && y >= move[1] ) ? 0 : value
       end
     end
-    result
+    next_player = opponent(player)
+    { :position => result, :player => next_player }
   end
 
   # Display the current position
-  def display_position(position)
+  def display_position(state)
+    position = state[:position]
     puts "Current position: "
     position.each do |row|
       puts row.join(" ")
@@ -76,11 +61,11 @@ class Game
 
   # Get the player's move
   def get_move
-    display_position(@current_position)
-    return nil if done?(current_state)
+    display_position(@current_state)
+    return nil if done?(@current_state)
     pending = true
-    height = @current_position.length
-    width = @current_position[0].length
+    height = current_position.length
+    width = current_position[0].length
     while pending
       puts
       print "Enter move as row, column: "
@@ -91,11 +76,11 @@ class Game
       else
         row = move[0].to_i
         column = move[1].to_i
-        if row < 0 || row > height + 1
+        if row < 0 || row > height - 1
           puts "Row must be between 0 and #{height - 1}"
-        elsif column < 0 || column > width + 1
+        elsif column < 0 || column > width - 1
           puts "Column must be between 0 and #{width - 1}"
-        elsif @current_position[row][column] == 0
+        elsif current_position[row][column] == 0
           puts "That cell has already been chomped!"
         else
           # It's a legal move
@@ -104,30 +89,19 @@ class Game
       end
     end
     # Make the move
-    @current_position = next_position(current_state, [row, column])
-    @current_player = :computer
+    make_move([row, column])
   end
 
-  # Choose move for computer
-  def computer_move
-    return nil if done?(current_state)
-    state = { :position => @current_position, :player => :computer}
-    # Pick best move using minimax algorithm
-    move = @minimax.best_move(state)
-    p move
-    # Make the move
+  def display_computer_move(move)
     row = move[0]
     column = move[1]
     puts "I chomp position #{row}, #{column}"
-    @current_position = next_position(current_state, move)
-    @current_player = :human
   end
-
 
 end
 
 # Driver code
-game = Game.new([[1, 1 ,1], [1, 1 ,1]])
+game = Chomp.new([[1, 1 ,1], [1, 1 ,1]])
 minimax = Minimax.new(game)
 game.minimax = minimax
 
