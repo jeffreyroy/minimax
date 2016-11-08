@@ -21,7 +21,7 @@ class Minimax
   def best_move_with_score(state)
     position = state[:position]
     player = state[:player]
-    legal_moves = @game.legal_moves(position)
+    legal_moves = @game.legal_moves(state)
     if legal_moves.empty?
       return[nil, 0]
     end
@@ -30,7 +30,7 @@ class Minimax
     next_player = @game.opponent(player)
     score_array = legal_moves.map do |move|
       # Generate resulting position
-      score_position = @game.next_position(position, move)
+      score_position = @game.next_position(state, move)
       score_state = { :position => score_position, :player => next_player }
       # Score resulting position (for opponent)
       move_score = score(score_state)

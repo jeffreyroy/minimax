@@ -39,7 +39,8 @@ class Game
 
   # Legal moves for minimax algorithm
   # Move expressed as coordinates of cell to be chomped
-  def legal_moves(position)
+  def legal_moves(state)
+    position = state[:position]
     move_list = []
     # Loop over all cells in the position
     position.each_with_index do |row, row_index|
@@ -55,7 +56,8 @@ class Game
 
   # Given position and move, return resulting position
   # Move expressed as coordinates of cell to be chomped
-  def next_position(position, move)
+  def next_position(state, move)
+    position = state[:position]
     result = position.each_with_index.map do |row, x|
       row.each_with_index.map do |value, y|
         ( x >= move[0] && y >= move[1] ) ? 0 : value
@@ -102,7 +104,7 @@ class Game
       end
     end
     # Make the move
-    @current_position = next_position(@current_position, [row, column])
+    @current_position = next_position(current_state, [row, column])
     @current_player = :computer
   end
 
@@ -117,7 +119,7 @@ class Game
     row = move[0]
     column = move[1]
     puts "I chomp position #{row}, #{column}"
-    @current_position = next_position(@current_position, move)
+    @current_position = next_position(current_state, move)
     @current_player = :human
   end
 
