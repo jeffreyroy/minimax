@@ -4,7 +4,6 @@ class Minimax
     @game = game
     @state_scores = {}
     @depth = 0
-    @testing = true
   end
 
   def best_move(state)
@@ -17,7 +16,7 @@ class Minimax
 
   # Pick best move for player to move
   # State is the state of the game expressed as a hash
-  # { :postition => <current position>, :player => <player to move> }
+  # { :position => <current position>, :player => <player to move> }
   def best_move_with_score(state)
     position = state[:position]
     player = state[:player]
@@ -59,25 +58,24 @@ class Minimax
     end
   end
 
-  # Returns score of a position for the player to move
-  # state = state of the game
-  # maximizing_player = true / false
+  # Returns score of a game state for the player to move
   def score(state)
     position = state[:position]
-    # player = state[:player]
-    # next_player = @game.opponent(player)
-    # If state is in master list, return score
+    # If state has already been scored, return score
     if @state_scores.has_key?(state)
       return @state_scores[state]
     end
     # If @game is over, return appropriate score
-    # @testing = false if @game.done?(state)
     if @game.won?(state)
       best_score = 10  # player won
     elsif @game.lost?(state)
       best_score = -10  # player lost
     elsif @game.done?(state)
       best_score = 0  # draw
+    elsif @depth > 100
+      # If too deep, treat as draw
+      # Probably due to moving back and forth
+      best_score = 0
     else
       # Otherwise find and score best move for opponent
       @depth += 1

@@ -4,20 +4,7 @@ require_relative 'game'
 # Classes
 class Chomp < Game
 
-   # Check whether game is over
-  def done?(state)
-    state[:position][0][0] == 0
-  end
-
-  # Check whether game has been won by a player
-  # (Whoever takes the last object wins)
-  def lost?(state)
-    done?(state)  && !won?(state)
-  end
-
-  def won?(state)
-    done?(state)
-  end
+  ## Game-specific methods to make moves
 
   # Legal moves for minimax algorithm
   # Move expressed as coordinates of cell to be chomped
@@ -48,15 +35,6 @@ class Chomp < Game
     end
     next_player = opponent(player)
     { :position => result, :player => next_player }
-  end
-
-  # Display the current position
-  def display_position(state)
-    position = state[:position]
-    puts "Current position: "
-    position.each do |row|
-      puts row.join(" ")
-    end
   end
 
   # Get the player's move
@@ -90,6 +68,35 @@ class Chomp < Game
     end
     # Make the move
     make_move([row, column])
+  end
+
+  ## Game-specific methods to determine outcome
+
+
+   # Check whether game is over
+  def done?(state)
+    state[:position][0][0] == 0
+  end
+
+  # Check whether game has been won by a player
+  # (Whoever takes the last object wins)
+  def lost?(state)
+    done?(state)  && !won?(state)
+  end
+
+  def won?(state)
+    done?(state)
+  end
+
+  ## Game-specific displays
+
+  # Display the current position
+  def display_position(state)
+    position = state[:position]
+    puts "Current position: "
+    position.each do |row|
+      puts row.join(" ")
+    end
   end
 
   def display_computer_move(move)
