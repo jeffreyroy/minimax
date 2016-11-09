@@ -68,9 +68,69 @@ class Freecell < Game
 
   # Legal moves for minimax algorithm
   # Returns array containing list of legal moves in given state
+  # Move is two-element array containing from coordinates and to
+  # Coordinates
   def legal_moves(state)
     moves = []
-    
+    # Loop over all movable cards
+    cards = movable_cards(state)
+    cards.each do |card|
+      # Loop over legal moves for this card 
+      legal_destinations(card).each do |dest|
+        # Add move to list
+        moves << [card, dest]
+      end
+    end
+    moves
+  end
+
+  def legal_destinations(cell)
+    destinations = []
+    # If cell is not a freecell, add first empty freecell
+    if cell[1] > 0
+      first_freecell = freecells.index { |freecell| cell_value(freecell) == 0 }
+      if first_freecell
+        destinations << freecells[first_freecell]
+      end
+    end
+  end
+
+  def movable_cards(state)
+    position = current_position
+    movable_list = []
+    # Get cards on bottom of columns
+    position.each_with_index do |column, index|
+      row = bottom(column)
+      if row
+        movable_list << [index, row]
+      end
+    end
+    # Get occupied freecells
+    freecells.each do |cell|
+      if cell_value(cell) > 0
+        movable_list << cell
+      end
+    end
+    # Return result
+    movable_list
+  end
+
+  def freecells
+    [[0, 0], [1, 0]]
+  end
+
+  def cell_value(cell)
+    current_position[cell[0]][cell[1]]
+  end
+
+  # Returns row coordinate of bottom card of a column
+  # Or nil if column is empty
+  def bottom(column)
+    index = column.last(12).index(0)
+    if index == 0
+      return nil
+    end
+    return index
   end
 
   # Given state and move, return resulting state after move is made
@@ -147,6 +207,10 @@ end
 game = Freecell.new
 minimax = Minimax.new(game)
 game.minimax = minimax
+
+p game.legal_moves(game.current_state)
+
+
 
 while !game.done?(game.current_state)
   game.get_move
