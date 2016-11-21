@@ -78,6 +78,7 @@ class Minimax
       best_score = 0
     else
       # Otherwise find and score best move for opponent
+      print @depth
       @depth += 1
       best_score = best_move_with_score(state)[1]
       @depth -= 1

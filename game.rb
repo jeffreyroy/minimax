@@ -118,6 +118,9 @@ class Game
   # Display the computer's move
   def display_computer_move(move)
     # Fill this in
+    # Example code:
+    # print "I move: "
+    # p move
   end
 
 end

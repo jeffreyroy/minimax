@@ -1,6 +1,10 @@
 require_relative 'minimax'
 require_relative 'game'
 
+# Simple implementation of gomoku
+# This game is too deep for the minimax algorithm, so it's
+# A good test of Monte Carlo
+
 
 # FOR SIMPLICITY Moves are restricted to subset of available moves
 # Classes
@@ -24,51 +28,19 @@ class Gomoku < Game
     position[9][9] = "O"
     # State is a hash consisting of the current position and the
     # Player currently to move
-    @current_state = { :position => position, :player => player }
-    # FOR SIMPLICITY Restrict moves to spaces adjacent to last moves
-    @last_move = { :human => [9, 9], :computer => [9, 9] }
+    # FOR SIMPLICITY add last move by human and computer
+    last_move = { :human => [9, 9], :computer => [9, 9] }
+    @current_state = {
+      :position => position,
+      :player => player,
+      :last_move => last_move
+       }
   end
 
-  # Get current position
-  def current_position
-    @current_state[:position]
-  end
-
-  # Get current player
-  def current_player
-    @current_state[:player]
-  end
-
-  # Get opponent of specified player
-  def opponent(player)
-    player == :human ? :computer : :human
-  end
-
-  # Make a move and update the state
-  def make_move(move)
-    # FOR SIMPLICTY update last move
-    player = current_state[:player]
-    @last_move[player] = move
-
-    # Update state
-    @current_state = next_state(@current_state, move)
-
-  end
-
-  # Choose move for computer
-  # using minimax
+  # For testing only:  Let player make computer's move
   # def computer_move
-  #   return nil if done?(@current_state)
-  #   # Pick best move using minimax algorithm
-  #   move = @minimax.best_move(@current_state)
-  #   # Make the move
-  #   display_computer_move(move)
-  #   make_move(move)
+  #   get_move
   # end
-
-  def computer_move
-    get_move
-  end
 
   ## 2. Game-specific methods to make moves
 
@@ -78,15 +50,9 @@ class Gomoku < Game
     position = state[:position]
     moves = []
     #  Loop through all spaces on grid
-    # position.each_with_index do |row, i|
-    #   row.each_with_index do |space, j|
-    #     # If space empty, add to result
-    #     moves << [i, j] if space == "."
-    #   end
-    # end
 
     # FOR SIMPLICITY restrict moves to spaces adjacent to last moves
-    @last_move.each_pair do |player, move|
+    state[:last_move].each_pair do |player, move|
       # Calculate range of space to check
       row = move[0]
       row_min = [row - 1, 0].max
@@ -111,12 +77,22 @@ class Gomoku < Game
   def next_state(state, move)
     position = state[:position]
     player = state[:player]
-    next_position = Array.new(position)
+    # Need to create new hash for last_move?
+    last_move = {}.merge(state[:last_move])
+    # Is this the easiest way to create a new copy of the position?
+    next_position = Marshal.load(Marshal.dump(position))
     # Add appropriate symbol to move location
     next_position[move[0]][move[1]] = self.class::SYMBOLS[player]
     # Swap players
     next_player = opponent(player)
-    { :position => next_position, :player => next_player}
+    # FOR SIMPLICTY update last move
+    last_move[player] = move
+    # Return updated state
+    new_state = { :position => next_position,
+      :player => next_player,
+      :last_move => last_move,
+    }
+    new_state
   end
 
   # Get the player's move and make it
@@ -158,7 +134,7 @@ class Gomoku < Game
   # Attempts to find five symbols in a row including specified space
   def find_win(position, row, column, symbol)
     # Make sure starting space includes required symbol
-    print position[row][column]
+    # print position[row][column]
     return false if position[row][column] != symbol
     # Loop over all directions
     self.class::DIRECTIONS.each do |direction|
@@ -183,7 +159,6 @@ class Gomoku < Game
       end
     end
     # Return true if five in a row found
-    p total_length
     total_length > 5
   end
 
@@ -193,7 +168,7 @@ class Gomoku < Game
     # Fill this in
     position = state[:position]
     player = state[:player]
-    last_move = @last_move[player]
+    last_move = state[:last_move][player]
     row = last_move[0]
     column = last_move[1]
     symbol = self.class::SYMBOLS[player]
@@ -206,7 +181,7 @@ class Gomoku < Game
     # Fill this in
     position = state[:position]
     player = opponent(state[:player])
-    last_move = @last_move[player]
+    last_move = state[:last_move][player]
     row = last_move[0]
     column = last_move[1]
     symbol = self.class::SYMBOLS[player]
@@ -228,27 +203,29 @@ class Gomoku < Game
 
     # FOR SIMPLICITY display last move
     last_player = opponent(state[:player])
-    last_move = @last_move[last_player]
+    last_move = state[:last_move]
     puts
-    print "Last move: #{last_player} to "
-    p last_move
-
+    puts "Last moves: "
+    print "Computer to "
+    p last_move[:computer]
+    print "Player to "
+    p last_move[:player]
   end
 
   # Display the computer's move
   def display_computer_move(move)
     # Fill this in
+    print "I move: "
+    p move
   end
 
 end
 
-# Driver code
-
 
 # Driver code
 game = Gomoku.new
-# minimax = Minimax.new(game)
-# game.minimax = minimax
+minimax = Minimax.new(game)
+game.minimax = minimax
 
 complete = false
 while !complete
