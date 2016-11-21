@@ -31,8 +31,7 @@ class Game
 
   # Get opponent of specified player
   def opponent(player)
-    return :computer if player == :human
-    :human
+    player == :human ? :computer : :human
   end
 
   # Make a move and update the state
