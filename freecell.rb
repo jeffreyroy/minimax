@@ -88,9 +88,8 @@ class Freecell < Game
     destinations = []
     # If cell is not a freecell, add first empty freecell
     if cell[1] > 0
-      first_freecell = freecells.index { |freecell| cell_value(freecell) == 0 }
-      if first_freecell
-        destinations << freecells[first_freecell]
+      if first_empty_freecell
+        destinations << freecells[first_empty_freecell]
       end
     end
   end
@@ -119,9 +118,14 @@ class Freecell < Game
     [[0, 0], [1, 0]]
   end
 
+  def first_empty_freecell
+      freecells.index { |freecell| cell_value(freecell) == 0 }
+  end
+
   def cell_value(cell)
     current_position[cell[0]][cell[1]]
   end
+
 
   # Returns row coordinate of bottom card of a column
   # Or nil if column is empty
@@ -140,23 +144,51 @@ class Freecell < Game
     # Fill this in
   end
 
+
+  # Return true if card with specific value can move
+  # Used when checking player move
+  def can_move?(card_value)
+    list = movable_cards(@current_state)
+    movable_values = list.map { |cell| cell_value(cell) }
+    movable_value.include?(card_value)
+  end
+
   # Get the player's move and make it
   def get_move
     # Fill this in.  Sample code:
     puts
     display_position
-    # move = nil
-    # until move != nil
-    #   puts
-    #   print "Enter your move: "
-      move_string = gets.chomp
-    #   < interpret move_string as move >
-    #   if !legal_moves(@current_state).index(move)
-    #     puts "That's not a legal move!"
-    #     move = nil
-    #   end
-    # end
-    # make_move(move)
+    move = nil
+    until move != nil
+      puts
+      print "Enter card to move (A-K): "
+      move_string = gets.chomp.upcase
+      card_value = value(move_string)
+      if card_value
+        if can_move?(card_value)
+          puts "Location can be a card on bottom of column, "
+          puts "Or F for freecell, or B for build pile."
+          print "Enter location to move to: "
+          location = gets.chomp.upcase
+          if location.length == 1
+            case "F"
+              # Free cell
+            case "B"
+              # Build pile
+            else
+              # Bottom of column
+            end
+          else
+            puts "location must be a single character. "
+          end
+        else
+          puts "That card can't move right now. "
+        end
+      else
+        puts "I don't recognize that card. "
+      end
+    end
+    make_move(move)
   end
 
   ## 3. Game-specific methods to determine outcome
