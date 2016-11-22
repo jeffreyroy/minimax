@@ -31,8 +31,7 @@ class Game
 
   # Get opponent of specified player
   def opponent(player)
-    return :computer if player == :human
-    :human
+    player == :human ? :computer : :human
   end
 
   # Make a move and update the state
@@ -49,6 +48,15 @@ class Game
     # Make the move
     display_computer_move(move)
     make_move(move)
+  end
+
+  # Use this to calculate score of any position beyond
+  # the depth of the search tree
+  # Default is just to return 0 (even)
+  # This should be customized for any game that is too deep to
+  # calculate to the end
+  def heuristic_score(state)
+    0
   end
 
   ## 2. Game-specific methods to make moves
@@ -119,6 +127,9 @@ class Game
   # Display the computer's move
   def display_computer_move(move)
     # Fill this in
+    # Example code:
+    # print "I move: "
+    # p move
   end
 
 end

@@ -1,13 +1,39 @@
 class Minimax
 
-  def initialize(game)
+  def initialize(game, max_depth = 100)
     @game = game
     @state_scores = {}
     @depth = 0
+    @max_depth = max_depth
   end
 
+  # # Find the best move (without random selection)
+  # def best_move(state)
+  #   best_move_with_score(state)[0]
+  # end
+
+  # Find the best move with random selection
   def best_move(state)
-    best_move_with_score(state)[0]
+    best_score = -9999
+    legal_moves = @game.legal_moves(state)
+    # Return nil if no legal moves
+    if legal_moves.empty?
+      return nil
+    end
+    # Build list of scores for moves
+    move_scores = legal_moves.map do |move|
+      print "\rConsidering "
+      print move
+      score_state = @game.next_state(state, move)
+      move_score = score(score_state)
+      best_score = move_score if move_score > best_score
+      { :move => move, :score => move_score }
+    end
+    # Pick best move
+    # Choose randomly if more than one
+    best_moves = move_scores.select { |move_score| move_score[:score] == best_score }
+    p best_moves
+    best_moves.sample[:move]
   end
 
   # Recursive minimax algorithm divided into two parts
@@ -61,29 +87,35 @@ class Minimax
   # Returns score of a game state for the player to move
   def score(state)
     position = state[:position]
-    # If state has already been scored, return score
+    # If state has already been calculated as win or loss,
+    # Return score
     if @state_scores.has_key?(state)
       return @state_scores[state]
     end
     # If @game is over, return appropriate score
     if @game.won?(state)
-      best_score = 10  # player won
+      best_score = 100  # player won
     elsif @game.lost?(state)
-      best_score = -10  # player lost
+      best_score = -100  # player lost
     elsif @game.done?(state)
       best_score = 0  # draw
-    elsif @depth > 100
-      # If too deep, treat as draw
-      # Probably due to moving back and forth
-      best_score = 0
+    elsif @depth > @max_depth
+      # If too deep, use game-specific scoring
+      # Default is just to give score of 1 (slightly better than draw)
+      # print "."
+      best_score = @game.heuristic_score(state)
     else
       # Otherwise find and score best move for opponent
+      # print @depth
       @depth += 1
       best_score = best_move_with_score(state)[1]
       @depth -= 1
     end
     # Add score to master list and return it
     # (Score is negative of opponent's best score)
-    @state_scores[state] = -best_score
+    if best_score.abs == 100
+      @state_scores[state] = -best_score
+    end
+    -best_score
   end
 end
