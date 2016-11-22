@@ -2,8 +2,6 @@ require_relative 'minimax'
 require_relative 'game'
 
 # Simple implementation of gomoku
-# This game is too deep for the minimax algorithm, so it's
-# A good test of Monte Carlo
 
 
 # FOR SIMPLICITY Moves are restricted to subset of available moves
@@ -30,10 +28,12 @@ class Gomoku < Game
     # Player currently to move
     # FOR SIMPLICITY add last move by human and computer
     last_move = { :human => [9, 9], :computer => [9, 9] }
+    outer_bounds = { :top => 9, :bottom => 9, :left => 9, :right => 9 }
     @current_state = {
       :position => position,
       :player => player,
-      :last_move => last_move
+      :last_move => last_move,
+      :outer_bounds => outer_bounds
        }
   end
 
@@ -48,27 +48,34 @@ class Gomoku < Game
   # Returns array containing list of legal moves in given state
   def legal_moves(state)
     position = state[:position]
+    outer_bounds = state[:outer_bounds]
     moves = []
     #  Loop through all spaces on grid
+    # position.each_with_index do |row, i|
+    #   row.each_with_index do |space, j|
+    #     if space == "."
+    #       moves << [i, j]
+    #     end
+    #   end
+    # end
 
-    # FOR SIMPLICITY restrict moves to spaces adjacent to last moves
-    state[:last_move].each_pair do |player, move|
-      # Calculate range of space to check
-      row = move[0]
-      row_min = [row - 1, 0].max
-      row_max = [row + 1, 18].min
-      column = move[1]
-      column_min = [column - 1, 0].max
-      column_max = [column + 1, 18].min
-      (row_min..row_max).each do |i|
-        (column_min..column_max).each do |j|
-          if position[i][j] == "." && !moves.index([i, j])
-            moves << [i, j]
-          end
+    # FOR SIMPLICITY require move to be within outer bounds
+    # Calculate range of space to check
+
+    row_min = [outer_bounds[:top] - 1, 0].max
+    row_max = [outer_bounds[:bottom] + 1, 18].min
+
+    column_min = [outer_bounds[:left] - 1, 0].max
+    column_max = [outer_bounds[:right] + 1, 18].min
+    (row_min..row_max).each do |i|
+      (column_min..column_max).each do |j|
+        if position[i][j] == "." # && !moves.index([i, j])
+          moves << [i, j]
         end
       end
     end
-  moves
+
+    moves
   end
 
   # Given state and move, return resulting state after move is made
@@ -79,6 +86,7 @@ class Gomoku < Game
     player = state[:player]
     # Need to create new hash for last_move?
     last_move = {}.merge(state[:last_move])
+    outer_bounds = {}.merge(state[:outer_bounds])
     # Is this the easiest way to create a new copy of the position?
     next_position = Marshal.load(Marshal.dump(position))
     # Add appropriate symbol to move location
@@ -87,10 +95,15 @@ class Gomoku < Game
     next_player = opponent(player)
     # FOR SIMPLICTY update last move
     last_move[player] = move
+    outer_bounds[:top] = move[0] if move[0] < outer_bounds[:top]
+    outer_bounds[:bottom] = move[0] if move[0] > outer_bounds[:bottom]
+    outer_bounds[:left] = move[1] if move[1] < outer_bounds[:left]
+    outer_bounds[:right] = move[1] if move[1] > outer_bounds[:right]
     # Return updated state
     new_state = { :position => next_position,
       :player => next_player,
       :last_move => last_move,
+      :outer_bounds => outer_bounds
     }
     new_state
   end
@@ -123,7 +136,9 @@ class Gomoku < Game
 
   # Check whether game is over
   def done?(state)
-    legal_moves(state).empty?
+    # legal_moves(state).empty?
+    # Try to speed up by disregarding possibility of draw
+    false
   end
 
   def inbounds?(row, column)
@@ -209,7 +224,7 @@ class Gomoku < Game
     print "Computer to "
     p last_move[:computer]
     print "Player to "
-    p last_move[:player]
+    p last_move[:human]
   end
 
   # Display the computer's move
@@ -224,7 +239,7 @@ end
 
 # Driver code
 game = Gomoku.new
-minimax = Minimax.new(game)
+minimax = Minimax.new(game, 1)
 game.minimax = minimax
 
 complete = false
