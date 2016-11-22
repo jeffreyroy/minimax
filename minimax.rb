@@ -100,9 +100,10 @@ class Minimax
     elsif @game.done?(state)
       best_score = 0  # draw
     elsif @depth > @max_depth
-      # If too deep, conventionally give score of 1 (slightly better than draw)
+      # If too deep, use game-specific scoring
+      # Default is just to give score of 1 (slightly better than draw)
       # print "."
-      best_score = 1
+      best_score = @game.heuristic_score(state)
     else
       # Otherwise find and score best move for opponent
       # print @depth

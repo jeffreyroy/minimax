@@ -1,4 +1,4 @@
-require_relative 'monte_carlo'
+require_relative 'minimax'
 require_relative 'game'
 
 # Simple implementation of gomoku
@@ -45,6 +45,17 @@ class Gomoku < Game
   # def computer_move
   #   get_move
   # end
+
+  def heuristic_score(state)
+    # Get player's best formation
+    player = state[:player]
+    player_score = longest_row(state, player)
+
+    # Get opponent's best formation
+    player = opponent(player)
+    opponent_score = longest_row(state, player)
+    player_score - opponent_score
+  end
 
   ## 2. Game-specific methods to make moves
 
@@ -151,18 +162,29 @@ class Gomoku < Game
 
   # Helper method to find winning formations
   # Attempts to find five symbols in a row including specified space
-  def find_win(position, row, column, symbol)
+  def max_in_a_row(position, row, column, symbol)
     # Make sure starting space includes required symbol
     # print position[row][column]
-    return false if position[row][column] != symbol
+    return 0 if position[row][column] != symbol
+    max = 0
     # Loop over all directions
     self.class::DIRECTIONS.each do |direction|
-      return true if five_in_a_row(position, row, column, symbol, direction)
+      check = check_row(position, row, column, symbol, direction)
+      max = check if check > max
     end
-    return false
+    return max
   end
 
-  def five_in_a_row(position, row, column, symbol, direction)
+  def longest_row(state, player)
+    position = state[:position]
+    last_move = state[:last_move][player]
+    row = last_move[0]
+    column = last_move[1]
+    symbol = self.class::SYMBOLS[player]
+    max_in_a_row(position, row, column, symbol)
+  end
+
+  def check_row(position, row, column, symbol, direction)
     row_increment = direction[0]
     column_increment = direction[1]
     total_length = 0
@@ -177,34 +199,24 @@ class Gomoku < Game
         current_column += multiplier[0] * column_increment
       end
     end
-    # Return true if five in a row found
-    total_length > 5
+    # Return number in a row
+    total_length - 1
   end
 
   # Check whether game has been won by the player currently on the move
   # in the specified state
   def won?(state)
     # Fill this in
-    position = state[:position]
     player = state[:player]
-    last_move = state[:last_move][player]
-    row = last_move[0]
-    column = last_move[1]
-    symbol = self.class::SYMBOLS[player]
-    find_win(position, row, column, symbol)
+    longest_row(state, player) >= 5
   end
 
   # Check whether game has been lost by the player currently on the move
   # in the specified state
   def lost?(state)
     # Fill this in
-    position = state[:position]
     player = opponent(state[:player])
-    last_move = state[:last_move][player]
-    row = last_move[0]
-    column = last_move[1]
-    symbol = self.class::SYMBOLS[player]
-    find_win(position, row, column, symbol)
+    longest_row(state, player) >= 5
   end
 
   ## 4. Game-specific displays
@@ -230,9 +242,10 @@ class Gomoku < Game
     # Fill this in
     puts
     print "Computer just moved to "
-    print move[1]
-    print ","
-    print move[0]
+    puts "#{move[1]}, #{move[0]}"
+    puts
+    puts "Your advantage: #{heuristic_score(@current_state)}"
+
   end
 
 end
@@ -240,7 +253,7 @@ end
 
 # Driver code
 game = Gomoku.new
-minimax = Montecarlo.new(game, 1000, 3)
+minimax = Minimax.new(game, 1)
 game.minimax = minimax
 done = false
 while !done

@@ -92,7 +92,7 @@ class Montecarlo
     elsif @game.done?(state)
       score = 0  # draw
     elsif @depth > @max_depth
-      score = 0  # beyond allowable depth
+      score = @game.heuristic_score(state)
     else
       move = pick_move(state)
       # print "\rConsidering "

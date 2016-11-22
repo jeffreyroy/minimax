@@ -50,6 +50,15 @@ class Game
     make_move(move)
   end
 
+  # Use this to calculate score of any position beyond
+  # the depth of the search tree
+  # Default is just to return 0 (even)
+  # This should be customized for any game that is too deep to
+  # calculate to the end
+  def heuristic_score(state)
+    0
+  end
+
   ## 2. Game-specific methods to make moves
 
   # Legal moves for minimax algorithm
