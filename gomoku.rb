@@ -19,6 +19,10 @@ class Gomoku < Game
 
   # Initialize new game
   def initialize
+    reset
+  end
+
+  def reset
     player = :human
     # Position = 19 * 19 array, each space initialized to dot
     position = Array.new(19) { Array.new(19, ".") }
@@ -216,22 +220,19 @@ class Gomoku < Game
     end
     puts "  0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8"
 
-    # FOR SIMPLICITY display last move
-    last_player = opponent(state[:player])
-    last_move = state[:last_move]
-    puts
-    print "Computer just moved to "
-    print last_move[:computer][1]
-    print ","
-    print last_move[:computer][2]
+    last_move = state[:last_move][:computer]
+    display_computer_move(last_move)
+
   end
 
   # Display the computer's move
   def display_computer_move(move)
     # Fill this in
     puts
-    print "I move: "
-    p move
+    print "Computer just moved to "
+    print move[1]
+    print ","
+    print move[0]
   end
 
 end
@@ -239,28 +240,37 @@ end
 
 # Driver code
 game = Gomoku.new
-minimax = Montecarlo.new(game, 1000, 10)
+minimax = Montecarlo.new(game, 1000, 3)
 game.minimax = minimax
-
-complete = false
-while !complete
-  game.get_move
-  if game.lost?(game.current_state)
-    puts "You win!!"
-    complete = true
-  elsif game.done?(game.current_state)
-    puts "Cat's game!"
-    complete = true
-  else
-    game.computer_move
+done = false
+while !done
+  game_over = false
+  while !game_over
+    game.get_move
     if game.lost?(game.current_state)
-      puts "I win!" 
-      complete = true
+      puts "You win!!"
+      game_over = true
+    elsif game.done?(game.current_state)
+      puts "Cat's game!"
+      game_over = true
+    else
+      game.computer_move
+      if game.lost?(game.current_state)
+        puts "I win!" 
+        game_over = true
+      end
     end
+  end
+
+  game.display_position(game.current_state)
+  puts
+  print "Play again? (y/n)"
+  again = gets.chomp.downcase
+  if again == "y" 
+    game.reset
+  else
+    done = true
   end
 end
 
-game.display_position(game.current_state)
-
-
-
+puts "Thanks for playing!"

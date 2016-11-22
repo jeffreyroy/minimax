@@ -2,40 +2,29 @@ class Montecarlo
 
   def initialize(game, max_tries = 100, max_depth = 100)
     @game = game
-    # State stats hash keeps track of scor,s and tries for each state
+    # State stats hash keeps track of scores and tries for each state
     # { state => { :score => total_score, :tries = total_tries } }
     @state_stats = {}
     @max_tries = max_tries
     @max_depth = max_depth
     @depth = 0
+    @c = Math.sqrt(2)  # Exploration constant for UCB
   end
 
   # Find the best move
   def best_move(state)
     best_score = -999
     best_move = nil
+    dot = (@max_tries / 10).floor
     # Run allowed number of simulations
-    (1..@max_tries).each do |try|
-      print "\rSimulation #{try}/#{@max_tries}"
+    print "Thinking"
+    (1..@max_tries).each_with_index do |try, i|
+      print "." if i % dot == 0
       simulate(state)
     end
-    # Loop through legal moves
-    @game.legal_moves(state).each do |move|
-      new_state = @game.next_state(state, move)
-      stats = @state_stats[new_state]
-      if stats
-        new_score = stats[:score] / stats[:tries]
-      else
-        new_score = -99
-      end
-      # Check whether current move is best so far
-      if new_score > best_score
-        best_score = new_score
-        best_move = move
-      end
-    end
-    # Return best move
-    best_move
+    show_scores(state)
+    pick_move(state)
+
   end
 
   # Update stats with simulated score
@@ -48,26 +37,62 @@ class Montecarlo
     end
   end
 
-  # Pick a random move
+  # Pick the most promising move
   def pick_move(state)
-    @game.legal_moves(state).sample
+    legal_moves = @game.legal_moves(state)
+    # Check to see whether any moves have not yet been tried
+    untried_moves = []
+    untried_moves = legal_moves.select { |move|
+      !@state_stats.has_key?(@game.next_state(state, move))
+      }
+
+    # If all moves tried, pick using upper confidence bound
+    if untried_moves.empty?
+      return ubt_move(state)
+    end
+    
+    # If moves remain untried, pick one at random
+    untried_moves.sample
+  end
+
+  # Pick most promising move using upper confidence bound
+  # Requires all moves to have been tried at least once
+  def ubt_move(state)
+    legal_moves = @game.legal_moves(state)
+    best_move = nil
+    best_bound = -999
+    legal_moves.each do |move|
+      upper_bound = ucb(state, move)
+      if upper_bound > best_bound
+        best_bound = upper_bound
+        best_move = move
+      end
+    end
+    # print "\r Examining #{best_move}  Depth #{@depth} "
+    best_move
+  end
+
+  # Calculate upper confidence bound for specific move
+  def ucb(state, move)
+    total_tries = @state_stats[state][:tries]
+    new_state = @game.next_state(state, move)
+    stats = @state_stats[new_state]
+    score = stats[:score]
+    tries = stats[:tries]
+    # Calculate upper confidence bound using formula
+    (score / tries) + @c * Math.sqrt( Math.log(total_tries) / tries) 
   end
 
   # Recursive tree search simulates a random game
   def simulate(state)
-    player = state[:player]
-    if @game.won?(state) && player == :computer
-      score = 100  # computer won
-    elsif @game.lost?(state) && player == :computer
-      score = -200  # computer lost
-    elsif @game.won?(state) && player == :human
-      score = -200  # computer lost
-    elsif @game.lost?(state) && player == :human
-      score = 100  # computer won
+    if @game.won?(state)
+      score = 100  # player won
+    elsif @game.lost?(state)
+      score = -100  # player lost
     elsif @game.done?(state)
       score = 0  # draw
     elsif @depth > @max_depth
-      score = 1  # beyond allowable depth
+      score = 0  # beyond allowable depth
     else
       move = pick_move(state)
       # print "\rConsidering "
@@ -77,19 +102,20 @@ class Montecarlo
       score = simulate(new_state)
       @depth -= 1
     end
-    update_stats(state, score)
-    score
+    update_stats(state, -score)
+    -score
   end
 
   # For testing
-  # Show all states and stats
-  def show_scores
-    puts "Showing stats: "
-    @state_scores.each_pair do |state, stats|
-      print "State: "
-      p state
-      puts "Score: #{stats[0]/stats[1]}"
+  # Show UBT of all moves
+  def show_scores(state)
+    legal_moves = @game.legal_moves(state)
+    legal_moves.each do |move|
+      upper_bound = ucb(state, move)
+      puts "#{move} - #{upper_bound}"
     end
   end
+
+
 
 end 
