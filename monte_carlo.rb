@@ -8,7 +8,8 @@ class Montecarlo
     @max_tries = max_tries
     @max_depth = max_depth
     @depth = 0
-    @c = Math.sqrt(2)  # Exploration constant for UCB
+    # @c = Math.sqrt(2)  # Exploration constant for UCB
+    @c = 0.5  # Exploration constant for UCB
   end
 
   # Find the best move
@@ -23,8 +24,27 @@ class Montecarlo
       simulate(state)
     end
     show_scores(state)
-    pick_move(state)
+    high_score_move(state)
+  end
 
+  def high_score_move(state)
+    legal_moves = @game.legal_moves(state)
+    best_move = nil
+    best_bound = -999
+    legal_moves.each do |move|
+      new_state = @game.next_state(state, move)
+      stats = @state_stats[new_state]
+      score = stats[:score]
+      tries = stats[:tries]
+      # Calculate upper confidence bound using formula
+      upper_bound = score / tries
+      if upper_bound > best_bound
+        best_bound = upper_bound
+        best_move = move
+      end
+    end
+    # print "\r Examining #{best_move}  Depth #{@depth} "
+    best_move
   end
 
   # Update stats with simulated score
@@ -85,10 +105,11 @@ class Montecarlo
 
   # Recursive tree search simulates a random game
   def simulate(state)
+    score = 0
     if @game.won?(state)
-      score = 100  # player won
+      score = 10 - @depth # player won
     elsif @game.lost?(state)
-      score = -100  # player lost
+      score = -10 + @depth # player lost
     elsif @game.done?(state)
       score = 0  # draw
     elsif @depth > @max_depth

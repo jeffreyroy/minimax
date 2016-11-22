@@ -14,6 +14,7 @@ class Minimax
 
   # Find the best move with random selection
   def best_move(state)
+    player = state[:player]
     best_score = -9999
     legal_moves = @game.legal_moves(state)
     # Return nil if no legal moves
@@ -22,17 +23,21 @@ class Minimax
     end
     # Build list of scores for moves
     move_scores = legal_moves.map do |move|
-      print "\rConsidering "
-      print move
+      print "\rConsidering #{move}  "
       score_state = @game.next_state(state, move)
       move_score = score(score_state)
+      next_player = score_state[:player]
+      # If alternating moves, use negative of opponent's score
+      if next_player != player
+        move_score = -move_score
+      end
       best_score = move_score if move_score > best_score
       { :move => move, :score => move_score }
     end
+    p move_scores
     # Pick best move
     # Choose randomly if more than one
     best_moves = move_scores.select { |move_score| move_score[:score] == best_score }
-    p best_moves
     best_moves.sample[:move]
   end
 
@@ -46,27 +51,33 @@ class Minimax
   def best_move_with_score(state)
     position = state[:position]
     player = state[:player]
+    best_player = player
     legal_moves = @game.legal_moves(state)
     if legal_moves.empty?
       return[nil, 0]
     end
     best_score = -999
     best_move = nil
-    next_player = @game.opponent(player)
+    # next_player = @game.opponent(player)
     score_array = legal_moves.map do |move|
       # Generate resulting state
       score_state = @game.next_state(state, move)
       # Score resulting position (for opponent)
       move_score = score(score_state)
+      next_player = score_state[:player]
+      # If alternating moves, use negative of opponent's score
+      if next_player != player
+        move_score = -move_score
+      end
       # Check whether this move is best so far
       if move_score > best_score
         best_move = move
         best_score = move_score
+        best_player = next_player
       end
     end
     # Return best move
     # print best_score
-
     [best_move, best_score]
   end
 
@@ -78,7 +89,7 @@ class Minimax
       position = state[:position]
       player = state[:player]
       puts
-      @game.display_position(position)
+      p position
       puts "Player to move: #{player}"
       puts "Score: #{score}"
     end
@@ -94,9 +105,9 @@ class Minimax
     end
     # If @game is over, return appropriate score
     if @game.won?(state)
-      best_score = 100  # player won
+      best_score = 100 - @depth # player won
     elsif @game.lost?(state)
-      best_score = -100  # player lost
+      best_score = -100 + @depth # player lost
     elsif @game.done?(state)
       best_score = 0  # draw
     elsif @depth > @max_depth
@@ -112,10 +123,9 @@ class Minimax
       @depth -= 1
     end
     # Add score to master list and return it
-    # (Score is negative of opponent's best score)
-    if best_score.abs == 100
-      @state_scores[state] = -best_score
+    if best_score == 100 || best_score == -100
+      @state_scores[state] = best_score
     end
-    -best_score
+    best_score
   end
 end

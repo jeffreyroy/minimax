@@ -61,6 +61,7 @@ class Tictactoe < Game
 
       if !legal_moves(@current_state).index(array_square)
         puts "That's not a legal move!"
+        # minimax.show_scores
         array_square = 0
       end
     end
