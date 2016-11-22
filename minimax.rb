@@ -87,17 +87,16 @@ class Minimax
   # Returns score of a game state for the player to move
   def score(state)
     position = state[:position]
-    # If state has already been scored, return score
-    # Score of one meant position was too deep, so treat
-    # as if not yet scored
-    if @state_scores.has_key?(state) && @state_scores[state].abs != 1
+    # If state has already been calculated as win or loss,
+    # Return score
+    if @state_scores.has_key?(state)
       return @state_scores[state]
     end
     # If @game is over, return appropriate score
     if @game.won?(state)
-      best_score = 10  # player won
+      best_score = 100  # player won
     elsif @game.lost?(state)
-      best_score = -10  # player lost
+      best_score = -100  # player lost
     elsif @game.done?(state)
       best_score = 0  # draw
     elsif @depth > @max_depth
@@ -113,6 +112,9 @@ class Minimax
     end
     # Add score to master list and return it
     # (Score is negative of opponent's best score)
-    @state_scores[state] = -best_score
+    if best_score.abs == 100
+      @state_scores[state] = -best_score
+    end
+    -best_score
   end
 end

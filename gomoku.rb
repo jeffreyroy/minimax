@@ -1,4 +1,4 @@
-require_relative 'minimax'
+require_relative 'monte_carlo'
 require_relative 'game'
 
 # Simple implementation of gomoku
@@ -220,16 +220,16 @@ class Gomoku < Game
     last_player = opponent(state[:player])
     last_move = state[:last_move]
     puts
-    puts "Last moves: "
-    print "Computer to "
-    p last_move[:computer]
-    print "Player to "
-    p last_move[:human]
+    print "Computer just moved to "
+    print last_move[:computer][1]
+    print ","
+    print last_move[:computer][2]
   end
 
   # Display the computer's move
   def display_computer_move(move)
     # Fill this in
+    puts
     print "I move: "
     p move
   end
@@ -239,7 +239,7 @@ end
 
 # Driver code
 game = Gomoku.new
-minimax = Minimax.new(game, 1)
+minimax = Montecarlo.new(game, 1000, 10)
 game.minimax = minimax
 
 complete = false
