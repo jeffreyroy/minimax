@@ -68,9 +68,73 @@ class Freecell < Game
 
   # Legal moves for minimax algorithm
   # Returns array containing list of legal moves in given state
+  # Move is two-element array containing from coordinates and to
+  # Coordinates
   def legal_moves(state)
     moves = []
-    
+    # Loop over all movable cards
+    cards = movable_cards(state)
+    cards.each do |card|
+      # Loop over legal moves for this card 
+      legal_destinations(card).each do |dest|
+        # Add move to list
+        moves << [card, dest]
+      end
+    end
+    moves
+  end
+
+  def legal_destinations(cell)
+    destinations = []
+    # If cell is not a freecell, add first empty freecell
+    if cell[1] > 0
+      if first_empty_freecell
+        destinations << freecells[first_empty_freecell]
+      end
+    end
+  end
+
+  def movable_cards(state)
+    position = current_position
+    movable_list = []
+    # Get cards on bottom of columns
+    position.each_with_index do |column, index|
+      row = bottom(column)
+      if row
+        movable_list << [index, row]
+      end
+    end
+    # Get occupied freecells
+    freecells.each do |cell|
+      if cell_value(cell) > 0
+        movable_list << cell
+      end
+    end
+    # Return result
+    movable_list
+  end
+
+  def freecells
+    [[0, 0], [1, 0]]
+  end
+
+  def first_empty_freecell
+      freecells.index { |freecell| cell_value(freecell) == 0 }
+  end
+
+  def cell_value(cell)
+    current_position[cell[0]][cell[1]]
+  end
+
+
+  # Returns row coordinate of bottom card of a column
+  # Or nil if column is empty
+  def bottom(column)
+    index = column.last(12).index(0)
+    if index == 0
+      return nil
+    end
+    return index
   end
 
   # Given state and move, return resulting state after move is made
@@ -80,23 +144,51 @@ class Freecell < Game
     # Fill this in
   end
 
+
+  # Return true if card with specific value can move
+  # Used when checking player move
+  def can_move?(card_value)
+    list = movable_cards(@current_state)
+    movable_values = list.map { |cell| cell_value(cell) }
+    movable_value.include?(card_value)
+  end
+
   # Get the player's move and make it
   def get_move
     # Fill this in.  Sample code:
     puts
     display_position
-    # move = nil
-    # until move != nil
-    #   puts
-    #   print "Enter your move: "
-      move_string = gets.chomp
-    #   < interpret move_string as move >
-    #   if !legal_moves(@current_state).index(move)
-    #     puts "That's not a legal move!"
-    #     move = nil
-    #   end
-    # end
-    # make_move(move)
+    move = nil
+    until move != nil
+      puts
+      print "Enter card to move (A-K): "
+      move_string = gets.chomp.upcase
+      card_value = value(move_string)
+      if card_value
+        if can_move?(card_value)
+          puts "Location can be a card on bottom of column, "
+          puts "Or F for freecell, or B for build pile."
+          print "Enter location to move to: "
+          location = gets.chomp.upcase
+          if location.length == 1
+            case "F"
+              # Free cell
+            case "B"
+              # Build pile
+            else
+              # Bottom of column
+            end
+          else
+            puts "location must be a single character. "
+          end
+        else
+          puts "That card can't move right now. "
+        end
+      else
+        puts "I don't recognize that card. "
+      end
+    end
+    make_move(move)
   end
 
   ## 3. Game-specific methods to determine outcome
@@ -147,6 +239,10 @@ end
 game = Freecell.new
 minimax = Minimax.new(game)
 game.minimax = minimax
+
+p game.legal_moves(game.current_state)
+
+
 
 while !game.done?(game.current_state)
   game.get_move
