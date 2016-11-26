@@ -196,13 +196,33 @@ class Annuvin < Game
     # Fill this in.  Sample code:
     puts
     display_position(@current_state)
+    piece_list = get_pieces(@current_state)
+    piece = nil
     move = nil
-    until move != nil
+    until piece != nil
+      print "Your pieces: "
+      p piece_list
       puts
-      print "Enter your move: "
-      move_string = gets.chomp
-      # < interpret move_string as move >
-      if !legal_moves(@current_state).index(move)
+      print "Enter piece to move (x, y): "
+      piece_string = gets.chomp
+      piece = piece_string.split(",").map { |x| x.to_i }
+      if piece.length != 2
+        puts "You must enter two coordinates. "
+        piece = nil
+      elsif !piece_list.include?(piece)
+        puts "That's not the location of a piece. "
+        piece = nil
+      end
+    end
+    until move != nil
+      print "Enter location to move: "
+      destination_string = gets.chomp
+      destination = destination_string.split(",").map { |x| x.to_i }
+      move = [piece, destination]
+      if destination.length != 2
+        puts "You must enter two coordinates. "
+        move = nil
+      elsif !legal_moves(@current_state).index(move)
         puts "That's not a legal move!"
         move = nil
       end
