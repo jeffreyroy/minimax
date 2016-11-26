@@ -1,3 +1,4 @@
+# require_relative 'monte_carlo'
 require_relative 'minimax'
 require_relative 'game'
 
@@ -54,7 +55,7 @@ class Gomoku < Game
     # Get opponent's best formation
     player = opponent(player)
     opponent_score = longest_row(state, player)
-    player_score - opponent_score
+    player_score - opponent_score * 1.1
   end
 
   ## 2. Game-specific methods to make moves
@@ -254,6 +255,7 @@ end
 # Driver code
 game = Gomoku.new
 minimax = Minimax.new(game, 1)
+# minimax = Montecarlo.new(game, 500, 4)
 game.minimax = minimax
 done = false
 while !done
