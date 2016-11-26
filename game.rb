@@ -59,6 +59,13 @@ class Game
     0
   end
 
+  # Use this to force ai to continue to analyse this position
+  # even if beyond maximum normal depth (e.g. if part of series
+  # of captures)
+  def force_analysis(state)
+    false
+  end
+
   ## 2. Game-specific methods to make moves
 
   # Legal moves for minimax algorithm
@@ -73,6 +80,8 @@ class Game
   def next_state(state, move)
     # Fill this in.  Sample code:
     # position = state[:position]
+    # # Is this the easiest way to create a new copy of the position?
+    # next_position = Marshal.load(Marshal.dump(position))
     # player = state[:player]
     # < define resulting position as next_position >
     # next_player = opponent(player)

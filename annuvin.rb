@@ -25,12 +25,16 @@ class Annuvin < Game
                 :ne =>[-1, 1],
                 :nw =>[-1, 0],
                 :se =>[1, 0],
-                :sw =>[-1, -1] }
+                :sw =>[1, -1] }
 
   ## 1. Methods common to all games, can be redefined if necessary
 
   # Initialize new game
   def initialize
+    reset
+  end
+
+  def reset
     player = :human
     position = init_board
     # number of pieces left for each player
@@ -45,7 +49,8 @@ class Annuvin < Game
                         :player => player,
                         :pieces_left => pieces_left,
                         :moving_piece => moving_piece,
-                        :moves_left => moves_left }
+                        :moves_left => moves_left,
+                        :force_analysis => false }
   end
 
   # Initialize 3x3 hex board
@@ -56,11 +61,10 @@ class Annuvin < Game
     end
   end
 
-  # Choose move for computer
-  # using minimax
-  def computer_move
-    get_move
-  end
+  # For testing purpose, let player choose computer move
+  # def computer_move
+  #   get_move
+  # end
 
   # Use this to calculate score of any position beyond
   # the depth of the search tree
@@ -68,14 +72,27 @@ class Annuvin < Game
   # This should be customized for any game that is too deep to
   # calculate to the end
   def heuristic_score(state)
-    0
+    player = state[:player]
+    pieces_left = state[:pieces_left]
+    pieces_left[player] - pieces_left[opponent(player)]
+  end
+
+
+  def force_analysis(state)
+    state[:force_analysis]
   end
 
   ## 2. Game-specific methods to make moves
 
-  # Helper method for vector addition
+  # Vector artihmetic
   def add_vector(vector1, vector2)
     vector1.zip(vector2).map { |x,y| x + y }
+  end
+
+  def distance(space1, space2)
+    ydiff = space1[0] - space2[0]
+    xdiff = space1[1] - space2[1]
+    ((xdiff + ydiff).abs + xdiff.abs + ydiff.abs) / 2
   end
 
   # Check whether a space is on the board
@@ -101,12 +118,13 @@ class Annuvin < Game
     moves_left = state[:moves_left]
     # If moving piece, add list of additional captures only
     if moving_piece
+      # Generate list of captures
       destinations = get_moves(state, moving_piece, moves_left, true)
       moves = destinations.map { |destination| [moving_piece, destination] }
-      # Generate list of captures
       # Add "pass" move
+      moves << [moving_piece, moving_piece]
     else
-      moves_left = state[:moves_left]
+      moves_left = total_moves(state)
       # Loop through pieces
       pieces = get_pieces(state)
       pieces.each do |piece_location|
@@ -114,8 +132,6 @@ class Annuvin < Game
         destinations = get_moves(state, piece_location, moves_left, false)
         moves += destinations.map { |destination| [piece_location, destination] }
       end
-
-
     end
     moves
   end
@@ -159,20 +175,25 @@ class Annuvin < Game
     # Loop through directions
     directions.each_value do |direction|
       current_space = add_vector(start_space, direction)
-      # Check whether destination is inbounds
-      if inbounds?(current_space)
-        # p "#{start_space} -> #{current_space}"
-        space_contents = position[current_space[0]][current_space[1]]
-        # Check whether destination is a legal move
-        if space_contents == self.class::SYMBOLS[opponent(player)] || (space_contents == "." && !capture_only)
-          # If move not in move list, add it
-          if !@current_move_list.include?(current_space)
-            @current_move_list << current_space
+      # For testing:  Limit ai to forward moves until captures start
+      if player != :computer ||
+        direction == [1, 0] || direction == [1, -1] ||
+        state[:pieces_left][:computer] < 4
+        # Check whether destination is inbounds
+        if inbounds?(current_space)
+          # p "#{start_space} -> #{current_space}"
+          space_contents = position[current_space[0]][current_space[1]]
+          # Check whether destination is a legal move
+          if space_contents == self.class::SYMBOLS[opponent(player)] || (space_contents == "." && !capture_only)
+            # If move not in move list, add it
+            if !@current_move_list.include?(current_space)
+              @current_move_list << current_space
+            end
           end
-        end
-        # If more moves left, call recursively
-        if moves_left > 1
-          destinations(state, current_space, moves_left - 1, capture_only)
+          # If more moves left, call recursively
+          if moves_left > 1
+            destinations(state, current_space, moves_left - 1, capture_only)
+          end
         end
       end
     end
@@ -184,22 +205,59 @@ class Annuvin < Game
   # the player to the opponent
   def next_state(state, move)
     # Fill this in.  Sample code:
-    # position = state[:position]
-    # player = state[:player]
-    # < define resulting position as next_position >
-    # next_player = opponent(player)
-    # { :position => next_position, :player => next_player}
+    position = state[:position]
+    # Is this the easiest way to create a new copy of the position?
+    next_position = Marshal.load(Marshal.dump(position))
+
+    player = state[:player]
+    pieces_left = {}.merge(state[:pieces_left])
+    moving_piece = nil
+    moves_left = 0
+    force = false
+    piece = move[0]
+    destination = move[1]
+    destination_contents = position[destination[0]][destination[1]]
+    # Make move on board
+    next_position[piece[0]][piece[1]] = "."
+    next_position[destination[0]][destination[1]] = self.class::SYMBOLS[player]
+    next_player = opponent(player)
+    # Check to see whether move is a capture
+    if destination_contents == self.class::SYMBOLS[opponent(player)]
+      # Make a capture move, allowing for additional moves
+      moves_left = total_moves(state) - distance(piece, destination)
+      if moves_left > 0
+        moving_piece = destination
+        next_player = player
+        force = true
+      end
+      pieces_left[opponent(player)] -= 1
+    end
+    # Create new state
+    new_state = { :position => next_position,
+      :player => next_player,
+      :pieces_left => pieces_left,
+      :moving_piece => moving_piece,
+      :moves_left => moves_left,
+      :force_analysis => force }
+    #If capture, check to see whether additional moves can be made
+    if moving_piece && get_moves(new_state, moving_piece, moves_left, true).empty?
+      # If no more moves, switch to next player
+      new_state[:moving_piece] = nil
+      new_state[:player] = opponent(player)
+    end
+    new_state
   end
 
   # Get the player's move and make it
   def get_move
     # Fill this in.  Sample code:
+    display_state(@current_state)
     puts
     display_position(@current_state)
     piece_list = get_pieces(@current_state)
-    piece = nil
+    piece = @current_state[:moving_piece]
     move = nil
-    until piece != nil
+    while piece == nil
       print "Your pieces: "
       p piece_list
       puts
@@ -214,7 +272,14 @@ class Annuvin < Game
         piece = nil
       end
     end
-    until move != nil
+    puts
+    puts "Moving piece at #{piece}."
+    moves_left = total_moves(@current_state)
+    capture_only = @current_state[:moving_piece] != nil
+    puts "Valid move locations: "
+    p get_moves(@current_state, piece, moves_left, capture_only)
+
+    while move == nil
       print "Enter location to move: "
       destination_string = gets.chomp
       destination = destination_string.split(",").map { |x| x.to_i }
@@ -243,7 +308,9 @@ class Annuvin < Game
   def won?(state)
     # Fill this in
     player = state[:player]
-    state[:pieces_left][opponent(player)] == 0
+    pieces_left = state[:pieces_left]
+    pieces_left[opponent(player)] == 0 ||
+      pieces_left[opponent(player)] == 1 && pieces_left[player] == 4
   end
 
   # Check whether game has been lost by the player currently on the move
@@ -251,7 +318,9 @@ class Annuvin < Game
   def lost?(state)
     # Fill this in
     player = state[:player]
-    state[:pieces_left][player] == 0
+    pieces_left = state[:pieces_left]
+    pieces_left[player] == 0 ||
+      pieces_left[opponent(player)] == 4 && pieces_left[player] == 1
   end
 
   ## 4. Game-specific displays
@@ -273,34 +342,62 @@ class Annuvin < Game
   def display_computer_move(move)
     # Fill this in
     # Example code:
-    # print "I move: "
-    # p move
+    puts
+    puts "I move from #{move[0]} to #{move[1]}. "
+  end
+
+  # Display state data for testing
+  def display_state(state)
+    player = state[:player]
+    pieces_left = state[:pieces_left]
+    puts
+    puts "Player to move: #{player}"
+    puts "Pieces for #{player}: #{pieces_left[player]}"
+    puts "Pieces for #{opponent(player)}: #{pieces_left[opponent(player)]}"
+    puts "Moving piece: #{state[:moving_piece]}"
+    puts "Moves left: #{state[:moves_left]}"
+
   end
 
 end
 
 # Driver code
 game = Annuvin.new
-
+minimax = Minimax.new(game, 0)
+# minimax = Montecarlo.new(game, 500, 4)
+game.minimax = minimax
 
 done = false
 while !done
   game_over = false
   while !game_over
-    game.get_move
-    if game.lost?(game.current_state)
-      puts "You win!!"
-      game_over = true
-    elsif game.done?(game.current_state)
-      puts "Cat's game!"
-      game_over = true
+    if game.current_state[:player] == :human
+      game.get_move
+  # game.display_position(game.current_state)
+
+      if game.lost?(game.current_state)
+        puts "You win!!"
+        game_over = true
+      end
     else
       game.computer_move
+  game.display_position(game.current_state)
+
       if game.lost?(game.current_state)
         puts "I win!" 
         game_over = true
       end
     end
+  end
+
+  game.display_position(game.current_state)
+  puts
+  print "Play again? (y/n)"
+  again = gets.chomp.downcase
+  if again == "y" 
+    game.reset
+  else
+    done = true
   end
 end
 

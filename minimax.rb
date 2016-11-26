@@ -1,10 +1,11 @@
 class Minimax
 
-  def initialize(game, max_depth = 100)
+  def initialize(game, max_depth = 10, max_score = 100)
     @game = game
     @state_scores = {}
     @depth = 0
     @max_depth = max_depth
+    @max_score = max_score
   end
 
   # # Find the best move (without random selection)
@@ -34,7 +35,7 @@ class Minimax
       best_score = move_score if move_score > best_score
       { :move => move, :score => move_score }
     end
-    p move_scores
+    # p move_scores
     # Pick best move
     # Choose randomly if more than one
     best_moves = move_scores.select { |move_score| move_score[:score] == best_score }
@@ -69,6 +70,10 @@ class Minimax
       if next_player != player
         move_score = -move_score
       end
+      # # For testing: Immediately return move that leads to win
+      # if move_score >= 50
+      #   return [move, move_score]
+      # end
       # Check whether this move is best so far
       if move_score > best_score
         best_move = move
@@ -105,12 +110,12 @@ class Minimax
     end
     # If @game is over, return appropriate score
     if @game.won?(state)
-      best_score = 100 - @depth # player won
+      best_score = @max_score - @depth # player won
     elsif @game.lost?(state)
-      best_score = -100 + @depth # player lost
+      best_score = -@max_score + @depth # player lost
     elsif @game.done?(state)
       best_score = 0  # draw
-    elsif @depth > @max_depth
+    elsif @depth > @max_depth && !@game.force_analysis(state)
       # If too deep, use game-specific scoring
       # Default is just to give score of 1 (slightly better than draw)
       # print "."
@@ -123,7 +128,7 @@ class Minimax
       @depth -= 1
     end
     # Add score to master list and return it
-    if best_score == 100 || best_score == -100
+    if best_score == @max_score || best_score == -@max_score
       @state_scores[state] = best_score
     end
     best_score
