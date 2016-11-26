@@ -1,5 +1,5 @@
-require_relative 'monte_carlo'
-# require_relative 'minimax'
+# require_relative 'monte_carlo'
+require_relative 'minimax'
 require_relative 'game'
 
 # Simple implementation of gomoku
@@ -254,8 +254,8 @@ end
 
 # Driver code
 game = Gomoku.new
-# minimax = Minimax.new(game, 1)
-minimax = Montecarlo.new(game, 500, 4)
+minimax = Minimax.new(game, 1)
+# minimax = Montecarlo.new(game, 500, 4)
 game.minimax = minimax
 done = false
 while !done
