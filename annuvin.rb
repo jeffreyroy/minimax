@@ -1,5 +1,5 @@
 # require_relative 'monte_carlo'
-require_relative 'minimax'
+# require_relative 'minimax'
 require_relative 'game'
 
 class Annuvin < Game
@@ -32,6 +32,7 @@ class Annuvin < Game
   # Initialize new game
   def initialize
     reset
+    initialize_ai(0, 100)
   end
 
   def reset
@@ -363,9 +364,9 @@ end
 
 # Driver code
 game = Annuvin.new
-minimax = Minimax.new(game, 0)
+# minimax = Minimax.new(game, 0)
 # minimax = Montecarlo.new(game, 500, 4)
-game.minimax = minimax
+# game.minimax = minimax
 
 done = false
 while !done

@@ -1,3 +1,5 @@
+require_relative 'minimaxable'
+
 # Game class
 # Creates framework for two-player game using minimax ai
 # position = data structure containing a position
@@ -6,6 +8,9 @@
 # { :position => <current position>, :player => <current player> }
 # move = data structure containing a move
 class Game
+
+  include Minimaxable
+
   attr_reader :current_state
   attr_accessor :minimax
 
@@ -17,6 +22,7 @@ class Game
     # State is a hash consisting of the current position and the
     # Player currently to move
     @current_state = { :position => position, :player => player }
+    initialize_ai(1, 100)
   end
 
   # Get current position
@@ -44,7 +50,7 @@ class Game
   def computer_move
     return nil if done?(@current_state)
     # Pick best move using minimax algorithm
-    move = @minimax.best_move(@current_state)
+    move = best_move(@current_state)
     # Make the move
     display_computer_move(move)
     make_move(move)

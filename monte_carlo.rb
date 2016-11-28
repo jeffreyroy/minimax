@@ -112,7 +112,7 @@ class Montecarlo
       score = -10 + @depth # player lost
     elsif @game.done?(state)
       score = 0  # draw
-    elsif @depth > @max_depth
+    elsif @depth > @max_depth && !@game.force_analysis(state)
       score = @game.heuristic_score(state)
     else
       move = pick_move(state)
