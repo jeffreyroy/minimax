@@ -21,6 +21,7 @@ class Gomoku < Game
   # Initialize new game
   def initialize
     reset
+    initialize_ai(0, 100)
   end
 
   def reset

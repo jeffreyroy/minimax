@@ -16,6 +16,7 @@ class Tictactoe < Game
     # State is a hash consisting of the current position and the
     # Player currently to move
     @current_state = { :position => position, :player => player }
+    initialize_ai(9, 100)
   end
 
   def number(player)
@@ -159,8 +160,8 @@ end
 
 # Driver code
 game = Tictactoe.new
-minimax = Minimax.new(game)
-game.minimax = minimax
+# minimax = Minimax.new(game)
+# game.minimax = minimax
 puts game.done?(game.current_state)
 puts game.done?( { :position => [-1, 1, 2, 1, 2, 1, 2, 1, 2, 1], :player => :human})
 
