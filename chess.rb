@@ -21,7 +21,7 @@ class Chess < Game
     # Add pieces to empty board
     add_pieces
     # Intialize ai
-    initialize_ai(1, 100)
+    initialize_ai(0, 100)
   end
 
   # Add initial piece setup to board
@@ -31,15 +31,37 @@ class Chess < Game
     # position[1] = "pppppppp".split("")
     # position[6] = "PPPPPPPP".split("")
     # position[7] = "RNBQKBNR".split("")
-    position[0] = "r......r".split("")
-    position[7] = "R......R".split("")
+    position[0] = "rnbqkbnr".split("")
+    position[1] = "pppppppp".split("")
+    position[6] = "PPPPPPPP".split("")
+    position[7] = "RNBQKBNR".split("")
+    # Add major pieces
     @current_state[:pieces] = {
       :human => [ Rook.new(self, [7, 0], :human),
-                  Rook.new(self, [7, 7], :human) ],
+                  Rook.new(self, [7, 7], :human),
+                  Bishop.new(self, [7, 2], :human),
+                  Bishop.new(self, [7, 5], :human),
+                  Knight.new(self, [7, 1], :human),
+                  Knight.new(self, [7, 6], :human),
+                  King.new(self, [7, 4], :human),
+                  Queen.new(self, [7, 3], :human)
+                   ],
       :computer => [ Rook.new(self, [0, 0], :computer),
-                  Rook.new(self, [0, 7], :computer) ]
+                  Rook.new(self, [0, 7], :computer),
+                  Bishop.new(self, [0, 2], :computer),
+                  Bishop.new(self, [0, 5], :computer),
+                  Knight.new(self, [0, 1], :computer),
+                  Knight.new(self, [0, 6], :computer),
+                  King.new(self, [0, 4], :computer),
+                  Queen.new(self, [0, 3], :computer)
+                ]
 
     }
+    # Add pawns
+    (0..7).each do |column|
+      @current_state[:pieces][:human] << Pawn.new(self, [6, column], :human)
+      @current_state[:pieces][:computer] << Pawn.new(self, [1, column], :computer)
+    end
     @current_state[:position] = position
   end
 
@@ -119,40 +141,35 @@ class Chess < Game
     display_position
     position = @current_state[:position]
     piece_list = @current_state[:pieces][:human]
+    # print "Your pieces: "
+    # puts piece_list.map { |piece| "#{piece.icon} at #{piece.location}"}
     move = nil
-    piece = nil
-    while piece == nil
-      # puts "Legal moves: "
-      # p legal_moves(@current_state)
+    while move == nil
       puts
-      print "Enter location of piece to move: "
-      from_label = gets.chomp
-      from = coordinates(from_label)
-      if from
-        if position[from[0]][from[1]] == "."
-          puts "That space is empty. "
-        else
-          puts "I read that as #{from}."
-        end
+      print "Enter move in algebraic notation: "
+      move_labels = gets.chomp.split("-")
+      if move_labels.length != 2 || move_labels[0].length != 2 || move_labels[1].length != 2
+        puts "I don't understand that move."
+        puts "Please use algebraic notation, e.g. 'e2-e4'."
       else
-        puts "I don't understand that as a location."
-        puts "Please enter a location as a followed by"
-        puts "a column, e.g. 'e2'"
+        from = coordinates(move_labels[0])
+        to = coordinates(move_labels[1])
+        if !from
+          puts "I don't understand #{move_labels[0]} as a position."
+        elsif !to
+          puts "I don't understand #{move_labels[1]} as a position."
+        else
+          piece = @current_state[:pieces][:human].find { |p| p.location == from }
+          if !piece
+            puts "You have no piece at #{move_labels[0]}"
+          elsif !piece.legal_moves(current_position).include?([from, to])
+            puts "That's not a legal destination."
+          else
+            move = [from, to]
+          end
+        end
       end
-      piece = @current_state[:pieces][:human].find { |p| p.location == from }
     end
-    puts
-    puts "Moving #{piece.icon} at #{from_label}."
-    to = [-1, -1]
-    while to == [-1, -1]
-      print "Enter destination: "
-      to = coordinates(gets.chomp)
-      if !piece.legal_moves(current_position).include?([from, to])
-        puts "That's not a legal destination."
-        to = [-1, -1]
-      end
-    end
-    move = [from, to]
     make_move(move)
   end
 
