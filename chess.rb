@@ -1,5 +1,6 @@
 require_relative 'minimax'
 require_relative 'game'
+require_relative 'chess_pieces'
 
 # Classes
 class Chess < Game
@@ -26,11 +27,32 @@ class Chess < Game
   # Add initial piece setup to board
   def add_pieces
     position = @current_state[:position]
-    position[0] = "rnbqkbnr".split("")
-    position[1] = "pppppppp".split("")
-    position[6] = "PPPPPPPP".split("")
-    position[7] = "RNBQKBNR".split("")
+    # position[0] = "rnbqkbnr".split("")
+    # position[1] = "pppppppp".split("")
+    # position[6] = "PPPPPPPP".split("")
+    # position[7] = "RNBQKBNR".split("")
+    position[0] = "r......r".split("")
+    position[7] = "R......R".split("")
+    @current_state[:pieces] = {
+      :human => [ Rook.new(self, [7, 0], :human),
+                  Rook.new(self, [7, 7], :human) ],
+      :computer => [ Rook.new(self, [0, 0], :computer),
+                  Rook.new(self, [0, 7], :computer) ]
+
+    }
     @current_state[:position] = position
+  end
+
+  def total_value(piece_list)
+    # return 0 if piece_list.empty?
+    piece_list.reduce(0) { |sum, piece| sum + piece.value }
+  end
+
+  # Score position based on value of remaining pieces
+  def heuristic_score(state)
+    pieces = state[:pieces]
+    player = state[:player]
+    total_value(pieces[player]) - total_value(pieces[opponent(player)])
   end
 
   ## Methods to make moves
@@ -55,15 +77,29 @@ class Chess < Game
   end
 
   # Given position and move, return resulting position
-  # Move expressed as number of square 1-9
   def next_state(state, move)
-    position = state[:position]
+    position = Marshal.load(Marshal.dump(state[:position]))
     player = state[:player]
-    pieces = state[:pieces]
-
-    result[move] = number(player)
-    next_player = opponent(player)
-    { :position => result, :player => next_player, :pieces => piece_list }
+    opp = opponent(player)
+    pieces = Marshal.load(Marshal.dump(state[:pieces]))
+    from = move[0]
+    to = move[1]
+    moving_piece = pieces[player].find { |piece| piece.location == from }
+    if !moving_piece
+      puts "ERROR--no piece to move!"
+    end
+    # Check for capture
+    if position[to[0]][to[1]] != "."
+      # Remove enemy piece
+      pieces[opp].delete_if { |piece| piece.location == to }
+    end
+    # Move piece
+    position[from[0]][from[1]] = "."
+    position[to[0]][to[1]] = moving_piece.icon
+    moving_piece.location = to
+    # Switch active player
+    next_player = opp
+    { :position => position, :player => next_player, :pieces => pieces }
   end
 
   # Interpret algebraic notatin as coordinates
@@ -86,11 +122,12 @@ class Chess < Game
     move = nil
     piece = nil
     while piece == nil
-      print "Your pieces: "
-      p piece_list
+      # puts "Legal moves: "
+      # p legal_moves(@current_state)
       puts
       print "Enter location of piece to move: "
-      from = coordinates(gets.chomp)
+      from_label = gets.chomp
+      from = coordinates(from_label)
       if from
         if position[from[0]][from[1]] == "."
           puts "That space is empty. "
@@ -102,28 +139,21 @@ class Chess < Game
         puts "Please enter a location as a followed by"
         puts "a column, e.g. 'e2'"
       end
+      piece = @current_state[:pieces][:human].find { |p| p.location == from }
     end
     puts
-    puts "Moving piece at #{from}."
-    # moves_left = total_moves(@current_state)
-    # capture_only = @current_state[:moving_piece] != nil
-    # puts "Valid move locations: "
-    # p get_moves(@current_state, piece, moves_left, capture_only)
-
-    # while move == nil
-    #   print "Enter location to move: "
-    #   destination_string = gets.chomp
-    #   destination = destination_string.split(",").map { |x| x.to_i }
-    #   move = [piece, destination]
-    #   if destination.length != 2
-    #     puts "You must enter two coordinates. "
-    #     move = nil
-    #   elsif !legal_moves(@current_state).index(move)
-    #     puts "That's not a legal move!"
-    #     move = nil
-    #   end
-    # end
-    # make_move(move)
+    puts "Moving #{piece.icon} at #{from_label}."
+    to = [-1, -1]
+    while to == [-1, -1]
+      print "Enter destination: "
+      to = coordinates(gets.chomp)
+      if !piece.legal_moves(current_position).include?([from, to])
+        puts "That's not a legal destination."
+        to = [-1, -1]
+      end
+    end
+    move = [from, to]
+    make_move(move)
   end
 
   ## Methods to determine outcome
@@ -131,20 +161,21 @@ class Chess < Game
   # Check whether game is over
   # (ie whether the board is full)
   def done?(state)
-    position = state[:position]
-    position.index(0) == nil
+    legal_moves(state).empty?
   end
 
-  # Check whether game has been won by a player
+  # Check whether game has been won by player to move
   def won?(state)
-    position = state[:position]
-    player = state[:player]
-
+    pieces = state[:pieces]
+    player = opponent(state[:player])
+    pieces[player].empty?
   end
 
+  # Check whether game has been lost by player to move
   def lost?(state)
-    position = state[:position]
-    player = opponent(state[:player])
+    pieces = state[:pieces]
+    player = state[:player]
+    pieces[player].empty?
 
   end
 
