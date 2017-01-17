@@ -50,14 +50,25 @@ class Checkers < Game
     position.each_with_index do |row, i|
       row.each_with_index do |space, j|
         if space == "o"
-          pieces[:computer] << Checker.new(self, [i, j], :computer)
+          pieces[:computer] << Man.new(self, [i, j], :computer)
         elsif space == "O"
-          pieces[:human] << Checker.new(self, [i, j], :human)
+          pieces[:human] << Man.new(self, [i, j], :human)
         end
       end
     end
-    @current_state[:position] = position
     @current_state[:pieces] = pieces
+    add_icons
+  end
+
+  # Add piece icons to board
+  def add_icons
+    [:human, :computer].each do |player|
+      @current_state[:pieces][player].each do |piece|
+        row = piece.location[0]
+        column = piece.location[1]
+        @current_state[:position][row][column] = piece.icon
+      end
+    end
   end
 
   def total_value(piece_list)
@@ -160,6 +171,26 @@ class Checkers < Game
     column + row
   end
 
+  # For testing - get piece at location
+  def get_piece(location_string)
+    location = coordinates(location_string)
+    pieces = @current_state[:pieces]
+    piece = pieces[:human].find { |piece| piece.location == location }
+    if !piece
+      piece = pieces[:computer].find { |piece| piece.location == location }
+    end
+    piece
+  end
+
+  # For testing - print legal moves for piece at location
+  def print_moves(location_string)
+    piece = get_piece(location_string)
+    if piece
+      p piece.legal_moves(@current_state).map { |move| algebraic(move[1]) }
+    else
+      "No piece there. "
+    end
+  end
 
  # Get the player's move and make it
   def get_move

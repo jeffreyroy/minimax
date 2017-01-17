@@ -40,11 +40,8 @@ class CheckersPiece < Piece
 
   # Check whether piece at destination is owned by same player
   # as moving piece
-  def same_owner(position, location)
-    icon1 = self.icon 
-    icon2 = piece_icon(position, location)
-    # Check to see whether both icons have same case
-    (icon1 == icon1.upcase) == (icon2 == icon2.upcase)
+  def same_owner(state, location)
+    state[:pieces][@player].find { |piece| piece.location == location }
   end
 
   def generate_moves(state)
@@ -69,7 +66,7 @@ class CheckersPiece < Piece
       destination = [@location[0] + d[0], @location[1] + d[1]]
       if inbounds(destination)
         # Check to see whether adjacent space is occupied by opponent
-        if !empty_space?(position, destination) && !same_owner(position, destination)
+        if !empty_space?(position, destination) && !same_owner(state, destination)
           # If occupied by opponent, verify that next space is empty
           capture_destination = [destination[0] + d[0], destination[1] + d[1]]
           if inbounds(capture_destination) && empty_space?(position, capture_destination)
@@ -105,8 +102,9 @@ class CheckersPiece < Piece
 
 end
 
-class Checker < CheckersPiece
-  ICON = "Oo"
+class Man < CheckersPiece
+  # ICON = ["\u26C0", "\u26C2"]
+  ICON = ["\u2295", "\u2299"]
   VALUE = 1
 
   def directions
@@ -117,7 +115,7 @@ class Checker < CheckersPiece
 end
 
 class King < CheckersPiece
-  ICON = "Kk"
+  ICON = ["\u26C1", "\u26C3"]
   VALUE = 2
 
   def directions

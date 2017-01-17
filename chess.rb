@@ -33,7 +33,7 @@ class Chess < Game
 
   # Add initial piece setup to board
   def add_pieces
-    position = @current_state[:position]
+    # position = @current_state[:position]
     # position[0] = "rnbqkbnr".split("")
     # position[1] = "pppppppp".split("")
     # position[6] = "PPPPPPPP".split("")
@@ -65,7 +65,11 @@ class Chess < Game
       @current_state[:pieces][:human] << Pawn.new(self, [6, column], :human)
       @current_state[:pieces][:computer] << Pawn.new(self, [1, column], :computer)
     end
-    # Add piece icons to board
+    add_icons
+  end
+  
+  # Add piece icons to board
+  def add_icons
     [:human, :computer].each do |player|
       @current_state[:pieces][player].each do |piece|
         row = piece.location[0]
@@ -73,7 +77,6 @@ class Chess < Game
         @current_state[:position][row][column] = piece.icon
       end
     end
-    @current_state[:position] = position
   end
 
   def total_value(piece_list)
