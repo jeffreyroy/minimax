@@ -7,7 +7,7 @@ class CheckersPiece < Piece
   VALUE = 0
 
   def initialize(game, location, player)
-    @game = game
+    # @game = game 
     @location = location
     @value = self.class::VALUE
     @icon = self.class::ICON
@@ -16,6 +16,12 @@ class CheckersPiece < Piece
 
   def icon
     @player == :human ? @icon[0] : @icon[1]
+  end
+
+  def inbounds(destination)
+    row = destination[0]
+    column = destination[1]
+    row >= 0 && row <= 7 && column >= 0 && column <= 7
   end
 
   def directions
@@ -41,24 +47,56 @@ class CheckersPiece < Piece
     (icon1 == icon1.upcase) == (icon2 == icon2.upcase)
   end
 
-  def legal_moves(position)
-    # puts "Generating moves for piece at #{@location}..."
+  def generate_moves(state)
+    position = state[:position]
     move_list = []
-    # Loop over directions
     directions.each do |d|
       destination = [@location[0] + d[0], @location[1] + d[1]]
       if inbounds(destination)
         # If position empty, add to move list
         if empty_space?(position, destination)
           move_list << [@location, destination]
-        elsif !same_owner(position, destination)
-          # If occupied by opponent, check for capture
+        end
+      end
+    end
+    move_list
+  end
+
+  def generate_captures(state)
+    position = state[:position]
+    move_list = []
+    directions.each do |d|
+      destination = [@location[0] + d[0], @location[1] + d[1]]
+      if inbounds(destination)
+        # Check to see whether adjacent space is occupied by opponent
+        if !empty_space?(position, destination) && !same_owner(position, destination)
+          # If occupied by opponent, verify that next space is empty
           capture_destination = [destination[0] + d[0], destination[1] + d[1]]
           if inbounds(capture_destination) && empty_space?(position, capture_destination)
             move_list << [@location, capture_destination]
           end
         end
       end
+    end
+    move_list
+  end
+
+  # Generate set of legal moves given game state
+  def legal_moves(state)
+    # puts "Generating moves for piece at #{@location}..."
+    position = state[:position]
+    move_list = []
+    # Check whether in the middle of a series of captures
+    if state[:moving_piece]
+      if state[:moving_piece] != @location
+        return []
+      end
+      # Add captures only
+      move_list += generate_captures(state)
+    else
+      # Add both normal moves and captures
+      move_list += generate_moves(state)
+      move_list += generate_captures(state)
     end
     # (En passant capture no yet implemented)
     # Return move list

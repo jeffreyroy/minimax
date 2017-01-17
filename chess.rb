@@ -1,6 +1,7 @@
 require_relative 'minimax'
 require_relative 'game'
 require_relative 'chess_pieces'
+require 'pry'
 
 # Classes
 class Chess < Game
@@ -17,11 +18,17 @@ class Chess < Game
     # State is a hash consisting of the current position and the
     # Player currently to move
     # Initialize empty board
-    @current_state = { :position => position, :player => player, :pieces => pieces }
+    @current_state = {
+      :position => position,
+      :player => player,
+      :pieces => pieces,
+      :force_analysis => false
+    }
     # Add pieces to empty board
     add_pieces
     # Intialize ai
     initialize_ai(0, 100)
+    @max_force_depth = 3
   end
 
   # Add initial piece setup to board
@@ -31,10 +38,6 @@ class Chess < Game
     # position[1] = "pppppppp".split("")
     # position[6] = "PPPPPPPP".split("")
     # position[7] = "RNBQKBNR".split("")
-    position[0] = "rnbqkbnr".split("")
-    position[1] = "pppppppp".split("")
-    position[6] = "PPPPPPPP".split("")
-    position[7] = "RNBQKBNR".split("")
     # Add major pieces
     @current_state[:pieces] = {
       :human => [ Rook.new(self, [7, 0], :human),
@@ -62,6 +65,14 @@ class Chess < Game
       @current_state[:pieces][:human] << Pawn.new(self, [6, column], :human)
       @current_state[:pieces][:computer] << Pawn.new(self, [1, column], :computer)
     end
+    # Add piece icons to board
+    [:human, :computer].each do |player|
+      @current_state[:pieces][player].each do |piece|
+        row = piece.location[0]
+        column = piece.location[1]
+        @current_state[:position][row][column] = piece.icon
+      end
+    end
     @current_state[:position] = position
   end
 
@@ -75,6 +86,10 @@ class Chess < Game
     pieces = state[:pieces]
     player = state[:player]
     total_value(pieces[player]) - total_value(pieces[opponent(player)])
+  end
+
+  def force_analysis(state)
+    state[:force_analysis] && @depth < @max_force_depth
   end
 
   ## Methods to make moves
@@ -93,7 +108,7 @@ class Chess < Game
     move_list = []
     # Loop over pieces
     piece_list.each do |piece|
-      move_list += piece.legal_moves(position)
+      move_list += piece.legal_moves(state)
     end
     move_list
   end
@@ -106,6 +121,7 @@ class Chess < Game
     pieces = Marshal.load(Marshal.dump(state[:pieces]))
     from = move[0]
     to = move[1]
+    force_analysis = false
     moving_piece = pieces[player].find { |piece| piece.location == from }
     if !moving_piece
       puts "ERROR--no piece to move!"
@@ -114,6 +130,8 @@ class Chess < Game
     if position[to[0]][to[1]] != "."
       # Remove enemy piece
       pieces[opp].delete_if { |piece| piece.location == to }
+      # Force AI to continue analysis
+      force_analysis = true
     end
     # Move piece
     position[from[0]][from[1]] = "."
@@ -121,7 +139,12 @@ class Chess < Game
     moving_piece.location = to
     # Switch active player
     next_player = opp
-    { :position => position, :player => next_player, :pieces => pieces }
+    {
+      :position => position,
+      :player => next_player,
+      :pieces => pieces,
+      :force_analysis => force_analysis
+    }
   end
 
   # Interpret algebraic notatin as coordinates
@@ -162,8 +185,10 @@ class Chess < Game
           piece = @current_state[:pieces][:human].find { |p| p.location == from }
           if !piece
             puts "You have no piece at #{move_labels[0]}"
-          elsif !piece.legal_moves(current_position).include?([from, to])
+          elsif !piece.legal_moves(@current_state).include?([from, to])
             puts "That's not a legal destination."
+            puts
+            binding.pry
           else
             move = [from, to]
           end

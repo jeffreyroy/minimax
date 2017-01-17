@@ -3,11 +3,11 @@ require_relative 'piece'
 class ChessPiece < Piece
   attr_reader :value
   attr_accessor :color, :player
-  ICON = "  "
+  ICON = [" ", " "]   # Icon represented in unicode
   VALUE = 0
 
   def initialize(game, location, player)
-    @game = game
+    # @game = game
     @location = location
     @value = self.class::VALUE
     @icon = self.class::ICON
@@ -30,15 +30,23 @@ class ChessPiece < Piece
 
   # Check whether piece at destination is owned by same player
   # as moving piece
-  def same_owner(position, location)
-    icon1 = self.icon 
-    icon2 = piece_icon(position, location)
-    # Check to see whether both icons have same case
-    (icon1 == icon1.upcase) == (icon2 == icon2.upcase)
+  def same_owner(state, location)
+    # icon1 = self.icon 
+    # icon2 = piece_icon(position, location)
+    # # Check to see whether both icons have same case
+    # (icon1 == icon1.upcase) == (icon2 == icon2.upcase)
+    state[:pieces][@player].find { |piece| piece.location == location }
   end
 
-  def legal_destination(position, destination)
-    inbounds(destination) && (empty_space?(position, destination) || !same_owner(position, destination))
+  # Check whether destination is on the board
+  def inbounds(destination)
+    row = destination[0]
+    column = destination[1]
+    row >= 0 && row <= 7 && column >= 0 && column <= 7
+  end
+
+  def legal_destination(state, destination)
+    inbounds(destination) && (empty_space?(state[:position], destination) || !same_owner(state, destination))
   end
 
 end
@@ -46,12 +54,13 @@ end
 
 
 class StraightMover < ChessPiece
-  ICON = "Rr"
+  ICON = ["\u2656", "\u265C"]
   VALUE = 5
   DIRECTIONS = [[-1, 0], [1, 0], [0, -1], [0, 1]]
 
 
-  def legal_moves(position)
+  def legal_moves(state)
+    position = state[:position]
     # puts "Generating moves for piece at #{@location}..."
     move_list = []
     # Loop over directions
@@ -69,7 +78,7 @@ class StraightMover < ChessPiece
         destination = [row, column]
       end
       # If next space is inbounds (i.e. occupied) add as capture
-      if inbounds(destination) && !same_owner(position, destination)
+      if inbounds(destination) && !same_owner(state, destination)
         move_list << [@location, destination]
       end
     end
@@ -81,28 +90,30 @@ end
 
 
 class Rook < StraightMover
-  ICON = "Rr"
+  # Icon represented in unicode
+  ICON = ["\u2656", "\u265C"]
   VALUE = 5
   DIRECTIONS = [[-1, 0], [1, 0], [0, -1], [0, 1]]
 end
 
 class Bishop < StraightMover
-  ICON = "Bb"
+  ICON = ["\u2657", "\u265D"]
   VALUE = 3
   DIRECTIONS = [[1, 1], [1, -1], [-1, -1], [-1, 1]]
 end
 
 class Queen < StraightMover
-  ICON = "Qq"
+  ICON = ["\u2655", "\u265B"]
   VALUE = 9
   DIRECTIONS = [[-1, 0], [1, 0], [0, -1], [0, 1], [1, 1], [1, -1], [-1, -1], [-1, 1]]
 end
 
 class King < ChessPiece
-  ICON = "Kk"
+  ICON = ["\u2654", "\u265A"]
   VALUE = 50
   DIRECTIONS = [[-1, 0], [1, 0], [0, -1], [0, 1], [1, 1], [1, -1], [-1, -1], [-1, 1]]
-  def legal_moves(position)
+  def legal_moves(state)
+    position = state[:position]
     # puts "Generating moves for piece at #{@location}..."
     move_list = []
     # Loop over directions
@@ -113,7 +124,7 @@ class King < ChessPiece
       column = @location[1] + col_inc
       destination = [row, column]
       # If destination empty or occupied by opponent, add as move
-      if legal_destination(position, destination)
+      if legal_destination(state, destination)
         move_list << [@location, destination]
       end
     end
@@ -124,10 +135,11 @@ class King < ChessPiece
 end
 
 class Knight < ChessPiece
-  ICON = "Nn"
+  ICON = ["\u2658", "\u265E"]
   VALUE = 3
   DIRECTIONS = [[1, 2], [1, -2], [-1, 2], [-1, -2], [2, 1], [2, -1], [-2, -1], [-2, 1]]
-  def legal_moves(position)
+  def legal_moves(state)
+    position = state[:position]
     # puts "Generating moves for piece at #{@location}..."
     move_list = []
     # Loop over directions
@@ -138,7 +150,7 @@ class Knight < ChessPiece
       column = @location[1] + col_inc
       destination = [row, column]
       # If destination empty or occupied by opponent, add as move
-      if legal_destination(position, destination)
+      if legal_destination(state, destination)
         move_list << [@location, destination]
       end
     end
@@ -149,7 +161,7 @@ end
 
 
 class Pawn < ChessPiece
-  ICON = "Pp"
+  ICON = ["\u2659", "\u265F"]
   VALUE = 1
 
   def direction
@@ -160,7 +172,8 @@ class Pawn < ChessPiece
     @player == :human ? 6 : 1
   end
 
-  def legal_moves(position)
+  def legal_moves(state)
+    position = state[:position]
     # puts "Generating moves for piece at #{@location}..."
     move_list = []
     # Add forward move
@@ -181,7 +194,7 @@ class Pawn < ChessPiece
     capture_directions.each do |d|
       destination = [@location[0] + d[0], @location[1] + d[1]]
       # If position occupied by opponent, add to move list
-      if inbounds(destination) && !empty_space?(position, destination) && !same_owner(position, destination)
+      if inbounds(destination) && !empty_space?(position, destination) && !same_owner(state, destination)
         move_list << [@location, destination]
       end
     end

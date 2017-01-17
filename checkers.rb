@@ -1,6 +1,7 @@
 require_relative 'minimax'
 require_relative 'game'
 require_relative 'checkers_pieces'
+require 'pry'
 
 # Classes
 class Checkers < Game
@@ -17,7 +18,12 @@ class Checkers < Game
     # State is a hash consisting of the current position and the
     # Player currently to move
     # Initialize empty board
-    @current_state = { :position => position, :player => player, :pieces => pieces }
+    @current_state = { 
+      :position => position,
+      :player => player, 
+      :pieces => pieces,
+      :moving_piece => nil
+       }
     # Add pieces to empty board
     add_pieces
     # Intialize ai
@@ -66,13 +72,18 @@ class Checkers < Game
     total_value(pieces[player]) - total_value(pieces[opponent(player)])
   end
 
+  def force_analysis(state)
+    !!state[:moving_piece]
+  end
+
   ## Methods to make moves
 
-  def inbounds(destination)
-    row = destination[0]
-    column = destination[1]
-    row >= 0 && row <= 7 && column >= 0 && column <= 7
-  end
+  # Moved this to piece
+  # def inbounds(destination)
+  #   row = destination[0]
+  #   column = destination[1]
+  #   row >= 0 && row <= 7 && column >= 0 && column <= 7
+  # end
 
   # Legal moves for minimax algorithm
   def legal_moves(state)
@@ -82,7 +93,7 @@ class Checkers < Game
     move_list = []
     # Loop over pieces
     piece_list.each do |piece|
-      move_list += piece.legal_moves(position)
+      move_list += piece.legal_moves(state)
     end
     move_list
   end
@@ -92,11 +103,13 @@ class Checkers < Game
     position = Marshal.load(Marshal.dump(state[:position]))
     player = state[:player]
     opp = opponent(player)
+    # Change this: Don't want to deep copy each piece here!
     pieces = Marshal.load(Marshal.dump(state[:pieces]))
     from = move[0]
     to = move[1]
-    moving_piece = pieces[player].find { |piece| piece.location == from }
-    if !moving_piece
+    moving_piece = nil
+    current_piece = pieces[player].find { |piece| piece.location == from }
+    if !current_piece
       puts "ERROR--no piece to move!"
     end
     # Check for capture
@@ -107,17 +120,28 @@ class Checkers < Game
       captured_location[1] = (from[1] + to[1]) / 2
       pieces[opp].delete_if { |piece| piece.location == captured_location }
       position[captured_location[0]][captured_location[1]] = "."
+      moving_piece = to
     end
     # Move piece
     position[from[0]][from[1]] = "."
-    position[to[0]][to[1]] = moving_piece.icon
-    moving_piece.location = to
-    # Switch active player
-    next_player = opp
-    { :position => position, :player => next_player, :pieces => pieces }
+    position[to[0]][to[1]] = current_piece.icon
+    current_piece.location = to
+    # If not in middle of series of captures, switch active player
+    next_player = moving_piece ? player : opp
+    update_state = { :position => position,
+      :player => next_player,
+      :pieces => pieces,
+      :moving_piece => moving_piece
+    }
+    # If no more captures, end player's move
+    if moving_piece && current_piece.generate_captures(update_state).empty?
+      update_state[:moving_piece] = nil
+      update_state[:player] = opp
+    end
+    update_state
   end
 
-  # Interpret algebraic notatin as coordinates
+  # Interpret algebraic notation as coordinates
   def coordinates(string)
     return nil if string.length != 2
     # interpret letter as column
@@ -127,8 +151,19 @@ class Checkers < Game
     [row, column]
   end
 
+    # Translate coordinates into algebraic notation
+  def algebraic(coordinates)
+    return nil if coordinates.length != 2
+    # interpret letter as column
+    row = self.class::ROWS[coordinates[0]]
+    column = self.class::COLUMNS[coordinates[1]]
+    column + row
+  end
+
+
  # Get the player's move and make it
   def get_move
+
     # Fill this in.  Sample code:
     puts
     display_position
@@ -155,8 +190,10 @@ class Checkers < Game
           piece = @current_state[:pieces][:human].find { |p| p.location == from }
           if !piece
             puts "You have no piece at #{move_labels[0]}"
-          elsif !piece.legal_moves(current_position).include?([from, to])
+          elsif !piece.legal_moves(@current_state).include?([from, to])
             puts "That's not a legal destination."
+            puts
+            binding.pry
           else
             move = [from, to]
           end
@@ -199,7 +236,7 @@ class Checkers < Game
   end
 
   def display_computer_move(move)
-    puts "I move #{move}"
+    puts "I move #{algebraic(move[0])}-#{algebraic(move[1])}"
   end
 
 end
@@ -209,19 +246,21 @@ game = Checkers.new
 
 complete = false
 while !complete
-  game.get_move
-  if game.lost?(game.current_state)
+  if game.current_state[:player] == :human
+    game.get_move
+  else
+    game.computer_move
+  end
+
+  if game.current_state[:player] == :human && game.won?(game.current_state)
     puts "You win!!"
+    complete = true
+  elsif game.current_state[:player] == :computer && game.won?(game.current_state)
+    puts "I win!!"
     complete = true
   elsif game.done?(game.current_state)
     puts "Draw!"
     complete = true
-  else
-    game.computer_move
-    if game.lost?(game.current_state)
-      puts "I win!" 
-      complete = true
-    end
   end
 end
 
