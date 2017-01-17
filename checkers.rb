@@ -272,9 +272,13 @@ class Checkers < Game
 
   # Print the entire board (only works for current position)
   def display_position
+    side = " \u2551"
+    puts " \u2554" + "\u2550" * 16 + "\u2557"
     current_position.each do |row|
-      puts row.join(" ")
+      row_string = row.join(" ")
+      puts side + row_string + side
     end
+    puts " \u255A" + "\u2550" * 16 + "\u255D"
   end
 
   def display_computer_move(move)

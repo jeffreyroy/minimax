@@ -67,7 +67,7 @@ class Chess < Game
     end
     add_icons
   end
-  
+
   # Add piece icons to board
   def add_icons
     [:human, :computer].each do |player|
@@ -213,24 +213,31 @@ class Chess < Game
   def won?(state)
     pieces = state[:pieces]
     player = opponent(state[:player])
-    pieces[player].empty?
+    # pieces[player].empty?
+    king = pieces[player].find { |piece| piece.class == King }
+    !king
   end
 
   # Check whether game has been lost by player to move
   def lost?(state)
     pieces = state[:pieces]
     player = state[:player]
-    pieces[player].empty?
-
+    # pieces[player].empty?
+    king = pieces[player].find { |piece| piece.class == King }
+    !king
   end
 
   ## Displays
 
   # Print the entire board (only works for current position)
   def display_position
+    side = " \u2551"
+    puts " \u2554" + "\u2550" * 16 + "\u2557"
     current_position.each do |row|
-      puts row.join(" ")
+      row_string = row.join(" ")
+      puts side + row_string + side
     end
+    puts " \u255A" + "\u2550" * 16 + "\u255D"
   end
 
   def display_computer_move(move)
