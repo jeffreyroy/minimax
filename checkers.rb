@@ -71,6 +71,11 @@ class Checkers < Game
     end
   end
 
+  # Return row at which player's men become kings
+  def end_row(player)
+    player == :human ? 0 : 7
+  end
+
   def total_value(piece_list)
     # return 0 if piece_list.empty?
     piece_list.reduce(0) { |sum, piece| sum + piece.value }
@@ -135,6 +140,12 @@ class Checkers < Game
     end
     # Move piece
     position[from[0]][from[1]] = "."
+    # If at end row, turn man into king
+    if to[0] == end_row(player)
+      pieces[player].delete(current_piece)
+      current_piece = King.new(self, from, player)
+      pieces[player] << current_piece
+    end
     position[to[0]][to[1]] = current_piece.icon
     current_piece.location = to
     # If not in middle of series of captures, switch active player
