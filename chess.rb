@@ -3,6 +3,13 @@ require_relative 'game'
 require_relative 'chess_pieces'
 require 'pry'
 
+## To do:
+# Check and Checkmate (add :check to state)
+# Pawn promotion
+# Castling
+# En passant
+# Opening book
+
 # Classes
 class Chess < Game
 
@@ -15,8 +22,6 @@ class Chess < Game
     position = Array.new(8) { Array.new(8, ".") }
     player = :human
     pieces = { human: [], computer: [] }
-    # State is a hash consisting of the current position and the
-    # Player currently to move
     # Initialize empty board
     @current_state = {
       :position => position,
@@ -27,17 +32,12 @@ class Chess < Game
     # Add pieces to empty board
     add_pieces
     # Intialize ai
-    initialize_ai(0, 100)
+    initialize_ai(0, 1000)
     @max_force_depth = 3
   end
 
   # Add initial piece setup to board
   def add_pieces
-    # position = @current_state[:position]
-    # position[0] = "rnbqkbnr".split("")
-    # position[1] = "pppppppp".split("")
-    # position[6] = "PPPPPPPP".split("")
-    # position[7] = "RNBQKBNR".split("")
     # Add major pieces
     @current_state[:pieces] = {
       :human => [ Rook.new(self, [7, 0], :human),
@@ -142,6 +142,7 @@ class Chess < Game
     moving_piece.location = to
     # Switch active player
     next_player = opp
+
     {
       :position => position,
       :player => next_player,
@@ -150,7 +151,7 @@ class Chess < Game
     }
   end
 
-  # Interpret algebraic notatin as coordinates
+  # Interpret algebraic notation as coordinates
   def coordinates(string)
     return nil if string.length != 2
     # interpret letter as column
@@ -158,6 +159,15 @@ class Chess < Game
     row = self.class::ROWS.index(string[1])
     return nil if !column || !row
     [row, column]
+  end
+
+  # Translate coordinates into algebraic notation
+  def algebraic(coordinates)
+    return nil if coordinates.length != 2
+    # interpret letter as column
+    row = self.class::ROWS[coordinates[0]]
+    column = self.class::COLUMNS[coordinates[1]]
+    column + row
   end
 
  # Get the player's move and make it
@@ -241,7 +251,7 @@ class Chess < Game
   end
 
   def display_computer_move(move)
-    puts "I move #{move}"
+    puts "I move #{algebraic(move[0])}-#{algebraic(move[1])}"
   end
 
 end

@@ -173,7 +173,7 @@ class Checkers < Game
     [row, column]
   end
 
-    # Translate coordinates into algebraic notation
+  # Translate coordinates into algebraic notation
   def algebraic(coordinates)
     return nil if coordinates.length != 2
     # interpret letter as column

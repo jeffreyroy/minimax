@@ -1,10 +1,21 @@
 require_relative 'piece'
 
 class ChessPiece < Piece
-  attr_reader :value
   attr_accessor :color, :player
   ICON = [" ", " "]   # Icon represented in unicode
-  VALUE = 0
+  VALUE = 0  # Value of piece
+  # Array used to calculate value of piece dynamically,
+  # based on location
+  CENTRALIZATION = [
+    [1, 1, 1, 2, 2, 1, 1, 1],
+    [1, 2, 2, 2, 2, 2, 2, 1],
+    [1, 2, 3, 3, 3, 3, 2, 1],
+    [1, 2, 3, 4, 4, 3, 2, 1],
+    [1, 2, 3, 4, 4, 3, 2, 1],
+    [1, 2, 3, 3, 3, 3, 2, 1],
+    [1, 2, 2, 2, 2, 2, 2, 1],
+    [1, 1, 1, 2, 2, 1, 1, 1]
+  ]
 
   def initialize(game, location, player)
     # @game = game
@@ -12,6 +23,10 @@ class ChessPiece < Piece
     @value = self.class::VALUE
     @icon = self.class::ICON
     @player = player
+  end
+
+  def value
+    @value * 10 + self.class::CENTRALIZATION[@location[0]][@location[1]]
   end
 
   def icon
