@@ -4,11 +4,12 @@ require_relative 'chess_pieces'
 require 'pry'
 
 ## To do:
-# Check and Checkmate (add :check to state)
+# Check and Checkmate (temporarily disabled for speed)
 # Pawn promotion
 # Castling
 # En passant
 # Opening book
+# Put next_state into pieces rather than game?
 
 # Classes
 class Chess < Game
@@ -27,6 +28,7 @@ class Chess < Game
       :position => position,
       :player => player,
       :pieces => pieces,
+      :check => false,
       :force_analysis => false
     }
     # Add pieces to empty board
@@ -60,6 +62,7 @@ class Chess < Game
                 ]
 
     }
+
     # Add pawns
     (0..7).each do |column|
       @current_state[:pieces][:human] << Pawn.new(self, [6, column], :human)
@@ -91,21 +94,44 @@ class Chess < Game
     total_value(pieces[player]) - total_value(pieces[opponent(player)])
   end
 
+  # Return row at which player's pawns promote
+  def end_row(player)
+    player == :human ? 0 : 7
+  end
+
   def force_analysis(state)
     state[:force_analysis] && @depth < @max_force_depth
   end
 
   ## Methods to make moves
 
+  # Find a player's king
+  def get_king(state, player)
+    pieces = state[:pieces][player]
+    pieces.find { |piece| piece.class == King }
+  end
+
+  # Test whether opponent is in check
+  def check?(state)
+    player = state[:player]
+    king = get_king(state, opponent(player))
+    # Look for a move that can capture the king
+    checking_move = king && pre_check_legal_moves(state).find {
+      |move| move[1] == king.location
+    }
+    !!checking_move
+  end
+
+  # Check whether a destination is on the board
   def inbounds(destination)
     row = destination[0]
     column = destination[1]
     row >= 0 && row <= 7 && column >= 0 && column <= 7
   end
 
-  # Legal moves for minimax algorithm
-  def legal_moves(state)
-    position = state[:position]
+  # Generate list of moves, not taking account of whether
+  # Player is left in check
+  def pre_check_legal_moves(state)
     player = state[:player]
     piece_list = state[:pieces][player]
     move_list = []
@@ -116,8 +142,24 @@ class Chess < Game
     move_list
   end
 
-  # Given position and move, return resulting position
+  # Get list of legal moves in given state
+  # for minimax algorithm
+  def legal_moves(state)
+    move_list = pre_check_legal_moves(state)
+    # # Eliminate moves which leave player in check
+    # # move_list.delete_if { |move| check?(next_state(state, move)) }
+    # move_list.each do |move| 
+    #   if check?(next_state(state, move))
+    #     print "."
+    #     move_list.delete(move)
+    #   end
+    # end
+    move_list
+  end
+
+  # Given state and move, return resulting state
   def next_state(state, move)
+    # Deep copy position (is this the easiest way?)
     position = Marshal.load(Marshal.dump(state[:position]))
     player = state[:player]
     opp = opponent(player)
@@ -125,6 +167,7 @@ class Chess < Game
     from = move[0]
     to = move[1]
     force_analysis = false
+    check = false
     moving_piece = pieces[player].find { |piece| piece.location == from }
     if !moving_piece
       puts "ERROR--no piece to move!"
@@ -136,17 +179,37 @@ class Chess < Game
       # Force AI to continue analysis
       force_analysis = true
     end
+    # Check for promotion
+    if moving_piece.class == Pawn && to[0] == end_row(player)
+      # Replace pawn with queen
+      # (Underpromotion not yet implemented)
+      pieces[player].delete(moving_piece)
+      moving_piece = Queen.new(self, to, player)
+      pieces[player] << moving_piece
+    end
     # Move piece
     position[from[0]][from[1]] = "."
     position[to[0]][to[1]] = moving_piece.icon
     moving_piece.location = to
     # Switch active player
     next_player = opp
-
+    # # Create new state for testing whether king is in check
+    # new_position_state = {
+    #   :position => position,
+    #   :player => player,
+    #   :pieces => pieces,
+    #   :check => false,
+    #   :force_analysis => false
+    # }
+    # # Test whether opponent's king is now in check
+    # check = check?(new_position_state)
+    # force_analysis = true if check
+    # Return new state
     {
       :position => position,
       :player => next_player,
       :pieces => pieces,
+      :check => check,
       :force_analysis => force_analysis
     }
   end
@@ -248,6 +311,10 @@ class Chess < Game
       puts side + row_string + side
     end
     puts " \u255A" + "\u2550" * 16 + "\u255D"
+    if @current_state[:check]
+      puts
+      puts "Check!"
+    end
   end
 
   def display_computer_move(move)
