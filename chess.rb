@@ -5,7 +5,7 @@ require 'pry'
 
 ## To do:
 # Check and Checkmate (temporarily disabled for speed)
-# Pawn promotion
+# Pawn promotion (done)
 # Castling
 # En passant
 # Opening book
