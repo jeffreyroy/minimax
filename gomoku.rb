@@ -21,6 +21,7 @@ class Gomoku < Game
   # Initialize new game
   def initialize
     reset
+    initialize_ai(0, 100)
   end
 
   def reset
@@ -103,7 +104,7 @@ class Gomoku < Game
     # Need to create new hash for last_move?
     last_move = {}.merge(state[:last_move])
     outer_bounds = {}.merge(state[:outer_bounds])
-    # Is this the easiest way to create a new copy of the position?
+    # Is this the easiest way to create a deep copy of the position?
     next_position = Marshal.load(Marshal.dump(position))
     # Add appropriate symbol to move location
     next_position[move[0]][move[1]] = self.class::SYMBOLS[player]

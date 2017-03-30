@@ -1,8 +1,7 @@
-class Minimax
+module Minimaxable
   attr_accessor :max_depth, :max_score
 
-  def initialize(game, max_depth = 10, max_score = 100)
-    @game = game
+  def initialize_ai(max_depth = 10, max_score = 100)
     @state_scores = {}
     @depth = 0
     @max_depth = max_depth
@@ -18,7 +17,7 @@ class Minimax
   def best_move(state)
     player = state[:player]
     best_score = -9999
-    legal_moves = @game.legal_moves(state)
+    legal_moves = legal_moves(state)
     # Return nil if no legal moves
     if legal_moves.empty?
       return nil
@@ -26,7 +25,7 @@ class Minimax
     # Build list of scores for moves
     move_scores = legal_moves.map do |move|
       print "\rConsidering #{move}  "
-      score_state = @game.next_state(state, move)
+      score_state = next_state(state, move)
       move_score = score(score_state)
       next_player = score_state[:player]
       # If alternating moves, use negative of opponent's score
@@ -54,16 +53,16 @@ class Minimax
     position = state[:position]
     player = state[:player]
     best_player = player
-    legal_moves = @game.legal_moves(state)
+    legal_moves = legal_moves(state)
     if legal_moves.empty?
       return[nil, 0]
     end
     best_score = -999
     best_move = nil
-    # next_player = @game.opponent(player)
+    # next_player = opponent(player)
     score_array = legal_moves.map do |move|
       # Generate resulting state
-      score_state = @game.next_state(state, move)
+      score_state = next_state(state, move)
       # Score resulting position (for opponent)
       move_score = score(score_state)
       next_player = score_state[:player]
@@ -110,17 +109,17 @@ class Minimax
       return @state_scores[state]
     end
     # If @game is over, return appropriate score
-    if @game.won?(state)
+    if won?(state)
       best_score = @max_score - @depth # player won
-    elsif @game.lost?(state)
+    elsif lost?(state)
       best_score = -@max_score + @depth # player lost
-    elsif @game.done?(state)
+    elsif done?(state)
       best_score = 0  # draw
-    elsif @depth > @max_depth && !@game.force_analysis(state)
+    elsif @depth > @max_depth && !force_analysis(state)
       # If too deep, use game-specific scoring
       # Default is just to give score of 1 (slightly better than draw)
       # print "."
-      best_score = @game.heuristic_score(state)
+      best_score = heuristic_score(state)
     else
       # Otherwise find and score best move for opponent
       # print @depth
